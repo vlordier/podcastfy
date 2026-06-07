@@ -122,3 +122,7 @@ dist/
 *.pyc
 __pycache__/
 *.egg-info/
+
+# Test artifacts
+tests/data/audioTEST/
+tests/data/transcriptsTEST/
