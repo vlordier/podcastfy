@@ -50,12 +50,13 @@ def merge_configs(base_config: Dict[str, Any], user_config: Dict[str, Any]) -> D
 
 class GenerateRequest(BaseModel):
     urls: List[str] = Field(default_factory=list, max_length=50)
-    tts_model: Optional[str] = None
+    tts_model: Optional[str] = Field(default=None, pattern=r"^(openai|elevenlabs|edge|gemini|geminimulti)?$")
     user_instructions: Optional[str] = None
-    creativity: Optional[float] = None
+    creativity: Optional[float] = Field(default=None, ge=0, le=2)
     openai_key: Optional[str] = None
     google_key: Optional[str] = None
     elevenlabs_key: Optional[str] = None
+    is_long_form: bool = False
     user_config: Optional[dict] = None
     conversation_config: Optional[dict] = None
 

@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv, find_dotenv
 from typing import Any, Dict, Optional
 import yaml
+from pydantic import BaseModel, Field
 
 
 
@@ -116,6 +117,40 @@ class Config:
 			Any: The value associated with the key, or the default value if not found.
 		"""
 		return self.config.get(key, default)
+
+class ContentGeneratorConfigModel(BaseModel):
+    llm_model: str = "gemini-2.5-flash"
+    meta_llm_model: str = "gemini-2.5-flash"
+    max_output_tokens: int = Field(default=8192, ge=256, le=65536)
+    prompt_template: str = "souzatharsis/podcastfy_multimodal_cleanmarkup"
+    prompt_commit: str = "b2365f11"
+    longform_prompt_template: str = "souzatharsis/podcastfy_longform"
+    longform_prompt_commit: str = "acfdbc91"
+    cleaner_prompt_template: str = "souzatharsis/podcastfy_longform_clean"
+    cleaner_prompt_commit: str = "8c110a0b"
+    rewriter_prompt_template: str = "souzatharsis/podcast_rewriter"
+    rewriter_prompt_commit: str = "8ee296fb"
+
+
+class ContentExtractorConfigModel(BaseModel):
+    youtube_url_patterns: list[str] = Field(default_factory=lambda: ["youtube.com", "youtu.be"])
+
+
+class AppConfigModel(BaseModel):
+    content_generator: ContentGeneratorConfigModel = Field(default_factory=ContentGeneratorConfigModel)
+    content_extractor: ContentExtractorConfigModel = Field(default_factory=ContentExtractorConfigModel)
+
+
+def load_app_config_model() -> AppConfigModel:
+    cfg = load_config()
+    raw = cfg.config
+    cg_raw = raw.get("content_generator", {})
+    ce_raw = raw.get("content_extractor", {})
+    return AppConfigModel(
+        content_generator=ContentGeneratorConfigModel(**cg_raw),
+        content_extractor=ContentExtractorConfigModel(**ce_raw),
+    )
+
 
 def load_config() -> Config:
 	"""

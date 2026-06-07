@@ -7,14 +7,11 @@ extraction, delegating to specialized extractors based on the source type.
 """
 
 import logging
-import re
 from typing import List
-from urllib.parse import urlparse
 from .youtube_transcriber import YouTubeTranscriber
 from .website_extractor import WebsiteExtractor
 from .pdf_extractor import PDFExtractor
 from .extractor_factory import ExtractorFactory
-from podcastfy.utils.config import load_config
 from google import genai
 from google.genai import types
 
@@ -27,8 +24,7 @@ logger = logging.getLogger(__name__)
 
 class ContentExtractor:
 	def __init__(self):
-		self.config = load_config()
-		self.content_extractor_config = self.config.get('content_extractor', {})
+		pass
 
 	def extract_content(self, source: str) -> str:
 		"""
