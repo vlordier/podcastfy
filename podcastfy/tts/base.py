@@ -7,13 +7,15 @@ import re
 class TTSProvider(ABC):
     """Abstract base class that defines the interface for TTS providers."""
     
+    multi_speaker: ClassVar[bool] = False
+    
     # Common SSML tags supported by most providers
     COMMON_SSML_TAGS: ClassVar[List[str]] = [
         'lang', 'p', 'phoneme', 's', 'sub'
     ]
     
     @abstractmethod
-    def generate_audio(self, text: str, voice: str, model: str, voice2: str) -> bytes:
+    def generate_audio(self, text: str, voice: str, model: str, voice2: str = None) -> bytes:
         """
         Generate audio from text using the provider's API.
         
@@ -21,6 +23,7 @@ class TTSProvider(ABC):
             text: Text to convert to speech
             voice: Voice ID/name to use
             model: Model ID/name to use
+            voice2: Second voice ID/name for multi-speaker providers
             
         Returns:
             Audio data as bytes

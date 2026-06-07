@@ -11,9 +11,7 @@ from dotenv import load_dotenv, find_dotenv
 from typing import Any, Dict, Optional
 import yaml
 
-from podcastfy.utils.logger import setup_logger
 
-logger = setup_logger(__name__)
 
 def get_config_path(config_file: str = 'config.yaml') -> Optional[str]:
 	"""
@@ -38,7 +36,7 @@ def get_config_path(config_file: str = 'config.yaml') -> Optional[str]:
 		raise FileNotFoundError(f"{config_file} not found")
 	
 	except (FileNotFoundError, PermissionError, OSError) as e:
-		logger.error(f"Error locating {config_file}: {e}")
+		print(f"Error locating {config_file}: {e}")
 		return None
 
 class Config:
@@ -62,7 +60,7 @@ class Config:
 		self.ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY", "")
 
 		if not self.GEMINI_API_KEY and not self.OPENAI_API_KEY:
-			logger.warning(
+			print(
 				"No LLM API keys found. Set GEMINI_API_KEY or OPENAI_API_KEY "
 				"in your environment or .env file. See .env.example."
 			)

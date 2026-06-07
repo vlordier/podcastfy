@@ -93,43 +93,25 @@ class TextToSpeech:
 
         try:
 
-            if (
-                "multi" in self.provider.model.lower()
-            ):  # refactor: We should have instead MultiSpeakerTTS and SingleSpeakerTTS classes
-                provider_config = self._get_provider_config()
-                audio_data_list = self.provider.generate_audio(
+            if self.provider.multi_speaker:
+                audio_data = self.provider.generate_audio(
                     cleaned_text,
                     voice="S",
                     model="en-US-Studio-MultiSpeaker",
                     voice2="R",
                     ending_message=self.ending_message,
                 )
-
                 try:
-                    # First verify we have data
-                    if not audio_data_list:
-                        raise ValueError("No audio data chunks provided")
-
-                    logger.info(f"Starting audio processing with {len(audio_data_list)} chunks")
-                    combined = AudioSegment.empty()
-                    
-                    for i, chunk in enumerate(audio_data_list):
-                        # Save chunk to temporary file
-                        
-                        segment = AudioSegment.from_file(io.BytesIO(chunk))
-                        logger.info(f"################### Loaded chunk {i}, duration: {len(segment)}ms")
-                        
-                        combined += segment
-                    
-                    # Export with high quality settings
+                    if not audio_data:
+                        raise ValueError("No audio data produced")
                     os.makedirs(os.path.dirname(output_file), exist_ok=True)
-                    combined.export(
-                        output_file, 
+                    segment = AudioSegment.from_file(io.BytesIO(audio_data))
+                    segment.export(
+                        output_file,
                         format=self.audio_format,
                         codec="libmp3lame",
                         bitrate="320k"
                     )
-                    
                 except Exception as e:
                     logger.error(f"Error during audio processing: {str(e)}")
                     raise

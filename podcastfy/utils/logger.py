@@ -6,9 +6,9 @@ It ensures consistent logging format and configuration across the application.
 """
 
 import logging
-from podcastfy.utils.config import load_config
 
 def setup_logger(name: str) -> logging.Logger:
+    from podcastfy.utils.config import load_config
     """
     Set up and configure a logger.
 
