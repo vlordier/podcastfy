@@ -88,7 +88,6 @@ class TextToSpeech:
             ValueError: If the input text is not properly formatted
         """
         # Validate transcript format
-        # self._validate_transcript_format(text)
 
         cleaned_text = text
 
