@@ -1,5 +1,4 @@
 import unittest
-import pytest
 from podcastfy.utils.config import load_config
 from podcastfy.content_parser.content_extractor import ContentExtractor
 from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
@@ -9,12 +8,10 @@ from podcastfy.content_parser.pdf_extractor import PDFExtractor
 
 class TestContentParser(unittest.TestCase):
     def test_content_extractor(self):
-        # Add tests for ContentExtractor
-        pass
+        """Test the ContentExtractor class."""
+        self.skipTest("ContentExtractor tests require network access and API keys")
 
-    @pytest.mark.skip(
-        reason="IP getting blocked by YouTube when running from GitHub Actions"
-    )
+    @unittest.skip("IP getting blocked by YouTube when running from GitHub Actions")
     def test_youtube_transcriber(self):
         """
         Test the YouTubeTranscriber class to ensure it correctly extracts and cleans transcripts from a YouTube video.
@@ -82,7 +79,7 @@ class TestContentParser(unittest.TestCase):
             extracted_content[:500].strip(), expected_content[:500].strip()
         )
 
-    @pytest.mark.skip(reason="Too expensive to be auto tested on Github Actions")
+    @unittest.skip("Too expensive to be auto tested on Github Actions")
     def test_generate_topic_content(self):
         """Test generating content for a specific topic."""
         extractor = ContentExtractor()

@@ -1,5 +1,4 @@
 import unittest
-import pytest
 from unittest.mock import patch, MagicMock
 import tempfile
 import os
@@ -124,7 +123,7 @@ class TestGenAIPodcast(unittest.TestCase):
         self.assertNotEqual(result, "")
         self.assertIsInstance(result, str)
 
-    @pytest.mark.skip(reason="Too expensive to be auto tested on Github Actions")
+    @unittest.skip("Too expensive to be auto tested on Github Actions")
     def test_generate_qa_content_from_topic(self):
         """Test generating Q&A content from a specific topic."""
         topic = "Latest news about OpenAI"
