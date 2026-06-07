@@ -10,7 +10,7 @@ import sys
 from typing import Any, Dict, Optional, List
 import yaml
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from podcastfy.utils.logger import setup_logger
 
@@ -57,12 +57,49 @@ class TTSProviderConfig(BaseModel):
     model: str | None = None
 
 
+class OutputDirectories(BaseModel):
+    transcripts: str = "./data/transcripts"
+    audio: str = "./data/audio"
+
+
 class ConversationConfigModel(BaseModel):
     """Pydantic model for conversation configuration."""
+    conversation_style: list[str] = Field(default_factory=lambda: ["engaging", "fast-paced", "enthusiastic"])
+    roles_person1: str = "main summarizer"
+    roles_person2: str = "questioner/clarifier"
+    dialogue_structure: list[str] = Field(default_factory=lambda: ["Introduction", "Main Content Summary", "Conclusion"])
+    podcast_name: str = "PODCASTIFY"
+    podcast_tagline: str = "Your Personal Generative AI Podcast"
+    output_language: str = "English"
+    engagement_techniques: list[str] = Field(default_factory=lambda: ["rhetorical questions", "anecdotes", "analogies", "humor"])
+    creativity: float = Field(default=1.0, ge=0, le=2)
+    user_instructions: str = ""
+    max_num_chunks: int = Field(default=8, ge=1, le=50)
+    min_chunk_size: int = Field(default=600, ge=50)
     text_to_speech: dict[str, TTSProviderConfig] = Field(default_factory=dict)
     default_tts_model: str = "openai"
-    creativity: float = 1.0
+    audio_format: str = "mp3"
+    temp_audio_dir: str = "data/audio/tmp/"
     ending_message: str = "See You Next Time!"
+    output_directories: OutputDirectories = Field(default_factory=OutputDirectories)
+
+    @field_validator("conversation_style")
+    @classmethod
+    def no_empty_styles(cls, v: list[str]) -> list[str]:
+        if any(not s.strip() for s in v):
+            raise ValueError("conversation_style entries cannot be empty")
+        return v
+
+    @field_validator("engagement_techniques")
+    @classmethod
+    def no_empty_techniques(cls, v: list[str]) -> list[str]:
+        if any(not s.strip() for s in v):
+            raise ValueError("engagement_techniques entries cannot be empty")
+        return v
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Backward-compat .get() for callers migrating from NestedConfig."""
+        return getattr(self, key, default)
 
 
 class NestedConfig:
@@ -253,13 +290,32 @@ def load_conversation_config_model(config_conversation: Optional[Dict[str, Any]]
 	tts_providers = {}
 	for provider_name, provider_cfg in tts_raw.items():
 		if isinstance(provider_cfg, dict):
+			# Skip non-provider keys
+			if provider_name in ("output_directories", "audio_format", "temp_audio_dir", "ending_message", "default_tts_model"):
+				continue
 			tts_providers[provider_name] = TTSProviderConfig(**provider_cfg)
 
+	output_dirs_raw = tts_raw.get("output_directories", {}) if isinstance(tts_raw, dict) else {}
+
 	return ConversationConfigModel(
-		text_to_speech=tts_providers,
-		default_tts_model=raw.get("default_tts_model", "openai"),
+		conversation_style=raw.get("conversation_style", ["engaging", "fast-paced", "enthusiastic"]),
+		roles_person1=raw.get("roles_person1", "main summarizer"),
+		roles_person2=raw.get("roles_person2", "questioner/clarifier"),
+		dialogue_structure=raw.get("dialogue_structure", ["Introduction", "Main Content Summary", "Conclusion"]),
+		podcast_name=raw.get("podcast_name", "PODCASTIFY"),
+		podcast_tagline=raw.get("podcast_tagline", "Your Personal Generative AI Podcast"),
+		output_language=raw.get("output_language", "English"),
+		engagement_techniques=raw.get("engagement_techniques", ["rhetorical questions", "anecdotes", "analogies", "humor"]),
 		creativity=float(raw.get("creativity", 1.0)),
-		ending_message=raw.get("ending_message", "See You Next Time!"),
+		user_instructions=raw.get("user_instructions", ""),
+		max_num_chunks=raw.get("max_num_chunks", 8),
+		min_chunk_size=raw.get("min_chunk_size", 600),
+		text_to_speech=tts_providers,
+		default_tts_model=tts_raw.get("default_tts_model", raw.get("default_tts_model", "openai")),
+		audio_format=tts_raw.get("audio_format", "mp3"),
+		temp_audio_dir=tts_raw.get("temp_audio_dir", "data/audio/tmp/"),
+		ending_message=tts_raw.get("ending_message", "See You Next Time!"),
+		output_directories=OutputDirectories(**output_dirs_raw) if output_dirs_raw else OutputDirectories(),
 	)
 
 def main() -> None:

@@ -2,6 +2,7 @@ import unittest
 from podcastfy.utils.config_conversation import (
     TTSProviderConfig,
     ConversationConfigModel,
+    OutputDirectories,
     load_conversation_config_model,
 )
 
@@ -64,6 +65,32 @@ class TestPydanticConfigs(unittest.TestCase):
         self.assertEqual(
             cfg.text_to_speech["elevenlabs"].default_voices["question"], "Chris"
         )
+
+    def test_creativity_range(self):
+        with self.assertRaises(ValueError):
+            ConversationConfigModel(creativity=-1)
+        with self.assertRaises(ValueError):
+            ConversationConfigModel(creativity=3)
+
+    def test_max_num_chunks_range(self):
+        with self.assertRaises(ValueError):
+            ConversationConfigModel(max_num_chunks=0)
+
+    def test_conversation_style_empty_string(self):
+        with self.assertRaises(ValueError):
+            ConversationConfigModel(conversation_style=["engaging", ""])
+
+    def test_engagement_techniques_empty_string(self):
+        with self.assertRaises(ValueError):
+            ConversationConfigModel(engagement_techniques=["humor", ""])
+
+    def test_load_conversation_config_model_populates_all(self):
+        cfg = load_conversation_config_model()
+        self.assertIsNotNone(cfg.podcast_name)
+        self.assertIsNotNone(cfg.roles_person1)
+        self.assertIsInstance(cfg.conversation_style, list)
+        self.assertIsInstance(cfg.output_directories, OutputDirectories)
+        self.assertGreater(len(cfg.conversation_style), 0)
 
 
 if __name__ == "__main__":

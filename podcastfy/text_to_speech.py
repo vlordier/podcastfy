@@ -16,7 +16,7 @@ from pydub import AudioSegment
 
 from .tts.factory import TTSProviderFactory
 from .utils.config import load_config
-from .utils.config_conversation import load_conversation_config
+from .utils.config_conversation import load_conversation_config_model, TTSProviderConfig
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,8 @@ class TextToSpeech:
                         conversation_config (Optional[Dict]): Configuration for conversation settings.
         """
         self.config = load_config()
-        self.conversation_config = load_conversation_config(conversation_config)
-        self.tts_config = self.conversation_config.get("text_to_speech", {})
+        self.conversation_config = load_conversation_config_model(conversation_config)
+        self.tts_config = self.conversation_config.text_to_speech
 
         # Get API key from config if not provided
         if not api_key:
@@ -52,29 +52,27 @@ class TextToSpeech:
 
         # Setup directories and config
         self._setup_directories()
-        self.audio_format = self.tts_config.get("audio_format", "mp3")
-        self.ending_message = self.tts_config.get("ending_message", "")
+        self.audio_format = self.conversation_config.audio_format
+        self.ending_message = self.conversation_config.ending_message
 
     def _get_provider_config(self) -> Dict[str, Any]:
         """Get provider-specific configuration."""
-        # Get provider name in lowercase without 'TTS' suffix
         provider_name = self.provider.__class__.__name__.lower().replace("tts", "")
+        provider_config = self.tts_config.get(provider_name)
 
-        # Get provider config from tts_config
-        provider_config = self.tts_config.get(provider_name, {})
-
-        # If provider config is empty, try getting from default config
-        if not provider_config:
-            provider_config = {
-                "model": self.tts_config.get("default_model"),
-                "default_voices": {
-                    "question": self.tts_config.get("default_voice_question"),
-                    "answer": self.tts_config.get("default_voice_answer"),
+        if provider_config is None:
+            provider_config = TTSProviderConfig(
+                model=None,
+                default_voices={
+                    "question": None,
+                    "answer": None,
                 },
-            }
+            )
 
-        logger.debug(f"Using provider config: {provider_config}")
-        return provider_config
+        return {
+            "model": provider_config.model,
+            "default_voices": provider_config.default_voices,
+        }
 
     def convert_to_speech(self, text: str, output_file: str) -> None:
         """
@@ -197,8 +195,8 @@ class TextToSpeech:
 
     def _setup_directories(self) -> None:
         """Setup required directories for audio processing."""
-        self.output_directories = self.tts_config.get("output_directories", {})
-        temp_dir = self.tts_config.get("temp_audio_dir", "data/audio/tmp/").rstrip("/").split("/")
+        self.output_directories = self.conversation_config.output_directories.model_dump()
+        temp_dir = self.conversation_config.temp_audio_dir.rstrip("/").split("/")
         self.temp_audio_dir = os.path.join(*temp_dir)
         base_dir = os.path.abspath(os.path.dirname(__file__))
         self.temp_audio_dir = os.path.join(base_dir, self.temp_audio_dir)
@@ -207,8 +205,8 @@ class TextToSpeech:
 
         # Create directories if they don't exist
         for dir_path in [
-            self.output_directories.get("transcripts"),
-            self.output_directories.get("audio"),
+            self.conversation_config.output_directories.transcripts,
+            self.conversation_config.output_directories.audio,
             self.temp_audio_dir,
         ]:
             if dir_path and not os.path.exists(dir_path):

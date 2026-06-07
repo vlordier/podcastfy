@@ -14,7 +14,7 @@ import re
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain import hub
-from podcastfy.utils.config_conversation import load_conversation_config
+from podcastfy.utils.config_conversation import load_conversation_config_model
 from podcastfy.utils.config import load_config
 from podcastfy.llm.factory import LLMProviderFactory, detect_llm_provider
 import logging
@@ -625,14 +625,10 @@ class ContentGenerator:
         self.config = load_config()
         self.content_generator_config = self.config.get("content_generator", {})
 
-        self.config_conversation = load_conversation_config(conversation_config)
-        self.tts_config = self.config_conversation.get("text_to_speech", {})
-
-        # Get output directories from conversation config
-        self.output_directories = self.tts_config.get("output_directories", {})
+        self.config_conversation = load_conversation_config_model(conversation_config)
 
         # Create output directories if they don't exist
-        transcripts_dir = self.output_directories.get("transcripts")
+        transcripts_dir = self.config_conversation.output_directories.transcripts
 
         if transcripts_dir and not os.path.exists(transcripts_dir):
             os.makedirs(transcripts_dir)
@@ -647,7 +643,7 @@ class ContentGenerator:
 
         llm_backend = LLMBackend(
             is_local=is_local,
-            temperature=self.config_conversation.get("creativity", 1),
+            temperature=self.config_conversation.creativity,
             max_output_tokens=self.content_generator_config.get(
                 "max_output_tokens", 8192
             ),
@@ -715,7 +711,7 @@ class ContentGenerator:
         user_prompt_template = ChatPromptTemplate.from_messages(
             messages=[HumanMessagePromptTemplate.from_template(messages)]
         )
-        user_instructions = self.config_conversation.get("user_instructions", "")
+        user_instructions = self.config_conversation.user_instructions
 
         user_instructions = (
             "[[MAKE SURE TO FOLLOW THESE INSTRUCTIONS OVERRIDING THE PROMPT TEMPLATE IN CASE OF CONFLICT: "
