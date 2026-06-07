@@ -111,6 +111,7 @@ venv.bak/
 
 # Poetry
 poetry.lock
+uv.lock
 .poetry/
 
 # Poetry
