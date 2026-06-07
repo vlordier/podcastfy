@@ -11,9 +11,19 @@ import logging
 import os
 import unicodedata
 
+from .extractor_base import ContentExtractor as ContentExtractorABC
+
+
 logger = logging.getLogger(__name__)
 
-class PDFExtractor:
+class PDFExtractor(ContentExtractorABC):
+	@classmethod
+	def can_handle(cls, source: str) -> bool:
+		return source.lower().endswith('.pdf')
+
+	def extract(self, source: str) -> str:
+		return self.extract_content(source)
+
 	def extract_content(self, file_path: str) -> str:
 		"""
 		Extract text content from a PDF file, handling foreign characters and special characters.

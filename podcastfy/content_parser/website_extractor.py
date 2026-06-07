@@ -12,12 +12,30 @@ import logging
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from podcastfy.utils.config import load_config
+from podcastfy.content_parser.pdf_extractor import PDFExtractor
+from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
+from .extractor_base import ContentExtractor as ContentExtractorABC
 from typing import List
 from playwright.sync_api import sync_playwright
 
 logger = logging.getLogger(__name__)
 
-class WebsiteExtractor:
+class WebsiteExtractor(ContentExtractorABC):
+	@classmethod
+	def can_handle(cls, source: str) -> bool:
+		if PDFExtractor.can_handle(source) or YouTubeTranscriber.can_handle(source):
+			return False
+		try:
+			if not source.startswith(('http://', 'https://')):
+				source = 'https://' + source
+			result = urlparse(source)
+			return all([result.scheme, result.netloc]) and '.' in result.netloc
+		except ValueError:
+			return False
+
+	def extract(self, source: str) -> str:
+		return self.extract_content(source)
+
 	def __init__(self):
 		"""
 		Initialize the WebsiteExtractor.

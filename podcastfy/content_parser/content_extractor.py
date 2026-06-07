@@ -13,42 +13,22 @@ from urllib.parse import urlparse
 from .youtube_transcriber import YouTubeTranscriber
 from .website_extractor import WebsiteExtractor
 from .pdf_extractor import PDFExtractor
+from .extractor_factory import ExtractorFactory
 from podcastfy.utils.config import load_config
 from google import genai
 from google.genai import types
+
+# Register extractors (order matters — more specific first)
+ExtractorFactory.register(PDFExtractor)
+ExtractorFactory.register(YouTubeTranscriber)
+ExtractorFactory.register(WebsiteExtractor)
 
 logger = logging.getLogger(__name__)
 
 class ContentExtractor:
 	def __init__(self):
-		"""
-		Initialize the ContentExtractor.
-		"""
-		self.youtube_transcriber = YouTubeTranscriber()
-		self.website_extractor = WebsiteExtractor()
-		self.pdf_extractor = PDFExtractor()
 		self.config = load_config()
 		self.content_extractor_config = self.config.get('content_extractor', {})
-
-	def is_url(self, source: str) -> bool:
-		"""
-		Check if the given source is a valid URL.
-
-		Args:
-			source (str): The source to check.
-
-		Returns:
-			bool: True if the source is a valid URL, False otherwise.
-		"""
-		try:
-			# If the source doesn't start with a scheme, add 'https://'
-			if not source.startswith(('http://', 'https://')):
-				source = 'https://' + source
-
-			result = urlparse(source)
-			return all([result.scheme, result.netloc])
-		except ValueError:
-			return False
 
 	def extract_content(self, source: str) -> str:
 		"""
@@ -64,15 +44,10 @@ class ContentExtractor:
 			ValueError: If the source type is unsupported.
 		"""
 		try:
-			if source.lower().endswith('.pdf'):
-				return self.pdf_extractor.extract_content(source)
-			elif self.is_url(source):
-				if any(pattern in source for pattern in self.content_extractor_config['youtube_url_patterns']):
-					return self.youtube_transcriber.extract_transcript(source)
-				else:
-					return self.website_extractor.extract_content(source)
-			else:
+			extractor = ExtractorFactory.create(source)
+			if extractor is None:
 				raise ValueError("Unsupported source type")
+			return extractor.extract(source)
 		except Exception as e:
 			logger.error(f"Error extracting content from {source}: {str(e)}")
 			raise

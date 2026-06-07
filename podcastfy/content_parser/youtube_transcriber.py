@@ -10,9 +10,20 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import logging
 from podcastfy.utils.config import load_config
 
+from .extractor_base import ContentExtractor as ContentExtractorABC
+
+
 logger = logging.getLogger(__name__)
 
-class YouTubeTranscriber:
+class YouTubeTranscriber(ContentExtractorABC):
+	@classmethod
+	def can_handle(cls, source: str) -> bool:
+		lower = source.lower()
+		return "youtube.com" in lower or "youtu.be" in lower
+
+	def extract(self, source: str) -> str:
+		return self.extract_transcript(source)
+
 	def __init__(self):
 		self.config = load_config()
 		self.youtube_transcriber_config = self.config.get('youtube_transcriber')
