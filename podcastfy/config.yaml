@@ -19,24 +19,11 @@ website_extractor:
   jina_api_url: "https://r.jina.ai"
   markdown_cleaning:
     remove_patterns:
-      - '!\[.*?\]\(.*?\)'
-      - '\[([^\]]+)\]\([^\)]+\)'
-      - 'https?://\S+|www\.\S+'
-
-youtube_transcriber:
-  remove_phrases:
-    - "[music]"
-
-logging:
-  level: "INFO"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-
-website_extractor:
-  markdown_cleaning:
-    remove_patterns:
-      - '\[.*?\]'  # Remove square brackets and their contents
-      - '\(.*?\)'  # Remove parentheses and their contents
+      - '!\[.*?\]\(.*?\)'  # Remove markdown images
+      - '\[([^\]]+)\]\([^\)]+\)'  # Remove markdown links
+      - 'https?://\S+|www\.\S+'  # Remove bare URLs
+      - '\[.*?\]'  # Remove remaining square brackets and contents
+      - '\(.*?\)'  # Remove remaining parentheses and contents
       - '^\s*[-*]\s'  # Remove list item markers
       - '^\s*\d+\.\s'  # Remove numbered list markers
       - '^\s*#+'  # Remove markdown headers
@@ -50,3 +37,11 @@ website_extractor:
     - 'noscript'
   user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
   timeout: 10  # Request timeout in seconds
+
+youtube_transcriber:
+  remove_phrases:
+    - "[music]"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
