@@ -3,9 +3,10 @@
 from elevenlabs import client as elevenlabs_client
 from ..base import TTSProvider
 from typing import List
+from podcastfy.utils.constants import ELEVENLABS_TTS_MODEL
 
 class ElevenLabsTTS(TTSProvider):
-    def __init__(self, api_key: str, model: str = "eleven_multilingual_v2") -> None:
+    def __init__(self, api_key: str, model: str = ELEVENLABS_TTS_MODEL) -> None:
         """
         Initialize ElevenLabs TTS provider.
         
@@ -27,4 +28,4 @@ class ElevenLabsTTS(TTSProvider):
         
     def get_supported_tags(self) -> List[str]:
         """Get supported SSML tags."""
-        return ['lang', 'p', 'phoneme', 's', 'sub'] 
+        return super().get_supported_tags() 

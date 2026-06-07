@@ -19,6 +19,9 @@ from pydantic import BaseModel, Field
 from ..client import generate_podcast
 import uvicorn
 
+from podcastfy.utils.constants import MAX_URLS, TEMP_FILE_MAX_AGE_SECONDS, DEFAULT_PORT, TEMP_DIR_NAME
+from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
+
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +52,8 @@ def merge_configs(base_config: Dict[str, Any], user_config: Dict[str, Any]) -> D
     return merged
 
 class GenerateRequest(BaseModel):
-    urls: List[str] = Field(default_factory=list, max_length=50)
-    tts_model: Optional[str] = Field(default=None, pattern=r"^(openai|elevenlabs|edge|gemini|geminimulti)?$")
+    urls: List[str] = Field(default_factory=list, max_length=MAX_URLS)
+    tts_model: Optional[str] = Field(default=None, pattern=r"^(openai|elevenlabs|edge|gemini|geminimulti)?$")  # Values from TTSProvider enum
     user_instructions: Optional[str] = None
     creativity: Optional[float] = Field(default=None, ge=0, le=2)
     openai_key: Optional[str] = None
@@ -74,14 +77,14 @@ async def verify_api_key(x_api_key: Optional[str] = Header(None)):
 
 app = FastAPI()
 
-TEMP_DIR = os.path.join(os.path.dirname(__file__), "temp_audio")
+TEMP_DIR = os.path.join(os.path.dirname(__file__), TEMP_DIR_NAME)
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # Clean audio files older than 1 hour
 now = time.time()
 for f in os.listdir(TEMP_DIR):
     fp = os.path.join(TEMP_DIR, f)
-    if os.path.isfile(fp) and now - os.path.getmtime(fp) > 3600:
+    if os.path.isfile(fp) and now - os.path.getmtime(fp) > TEMP_FILE_MAX_AGE_SECONDS:
         try:
             os.remove(fp)
         except OSError:
@@ -92,15 +95,15 @@ def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_
     """"""
     try:
         # Set environment variables
-        os.environ['OPENAI_API_KEY'] = data.openai_key
-        os.environ['GEMINI_API_KEY'] = data.google_key
-        os.environ['ELEVENLABS_API_KEY'] = data.elevenlabs_key
+        os.environ[ApiKeyLabel.OPENAI.value] = data.openai_key
+        os.environ[ApiKeyLabel.GEMINI.value] = data.google_key
+        os.environ[ApiKeyLabel.ELEVENLABS.value] = data.elevenlabs_key
 
         # Load base configuration
         base_config = load_base_config()
         
         # Get TTS model and its configuration from base config
-        tts_model = data.tts_model or base_config.get('text_to_speech', {}).get('default_tts_model', 'openai')
+        tts_model = data.tts_model or base_config.get('text_to_speech', {}).get('default_tts_model', TTSProvider.OPENAI.value)
         tts_base_config = base_config.get('text_to_speech', {}).get(tts_model, {})
         
         # Get voices (use user-provided voices or fall back to defaults)
@@ -175,5 +178,5 @@ def healthcheck():
 
 if __name__ == "__main__":
     host = os.getenv("HOST", "127.0.0.1")
-    port = int(os.getenv("PORT", 8080))
+    port = int(os.getenv("PORT", DEFAULT_PORT))
     uvicorn.run(app, host=host, port=port)

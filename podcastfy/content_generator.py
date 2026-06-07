@@ -20,8 +20,33 @@ from podcastfy.llm.factory import LLMProviderFactory, detect_llm_provider
 import logging
 from langchain.prompts import HumanMessagePromptTemplate
 from abc import ABC, abstractmethod
+from pydantic import BaseModel, Field, ConfigDict
+
+from podcastfy.utils.enums import LLMProvider, SpeakerTag, ApiKeyLabel
+from podcastfy.utils.constants import (
+    COMMON_SSML_TAGS,
+    DEFAULT_GEMINI_LLM,
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_MAX_NUM_CHUNKS,
+    DEFAULT_MIN_CHUNK_SIZE,
+)
 
 logger = logging.getLogger(__name__)
+
+
+class PromptParams(BaseModel):
+    input_text: str = ""
+    conversation_style: list[str] = Field(default_factory=list)
+    roles_person1: str = ""
+    roles_person2: str = ""
+    dialogue_structure: list[str] = Field(default_factory=list)
+    podcast_name: str = ""
+    podcast_tagline: str = ""
+    output_language: str = "English"
+    user_instructions: str = ""
+    engagement_techniques: list[str] = Field(default_factory=list)
+    is_long_form: bool = False
+    model_config = ConfigDict(extra="forbid")
 
 
 class LLMBackend:
@@ -31,19 +56,19 @@ class LLMBackend:
         temperature: float,
         max_output_tokens: int,
         model_name: str,
-        api_key_label: str = "GEMINI_API_KEY",
+        api_key_label: str = ApiKeyLabel.GEMINI,
     ):
         self.is_local = is_local
         self.model_name = model_name
         self.is_multimodal = not is_local
 
         if is_local:
-            provider_name = "llamafile"
+            provider_name = LLMProvider.LLAMAFILE
             api_key = ""
         else:
             provider_name = detect_llm_provider(model_name)
             api_key = os.environ.get(
-                "GEMINI_API_KEY" if provider_name == "gemini" else api_key_label, ""
+                ApiKeyLabel.GEMINI if provider_name == LLMProvider.GEMINI else api_key_label, ""
             )
 
         self.provider = LLMProviderFactory.create(
@@ -90,8 +115,8 @@ class LongFormContentGenerator:
         """
         self.llm_chain = chain
         self.llm = llm
-        self.max_num_chunks = config_conversation.get("max_num_chunks", 10)  # Default if not in config
-        self.min_chunk_size = config_conversation.get("min_chunk_size", 200)  # Default if not in config
+        self.max_num_chunks = config_conversation.get("max_num_chunks", DEFAULT_MAX_NUM_CHUNKS)
+        self.min_chunk_size = config_conversation.get("min_chunk_size", DEFAULT_MIN_CHUNK_SIZE)
 
     def __calculate_chunk_size(self, input_content: str) -> int:
         """
@@ -287,34 +312,19 @@ class ContentCleanerMixin:
 
     @staticmethod
     def _clean_tss_markup(
-        input_text: str, 
-        additional_tags: List[str] = ["Person1", "Person2"]
+        input_text: str,
+        additional_tags: list[SpeakerTag] = [SpeakerTag.PERSON1, SpeakerTag.PERSON2]
     ) -> str:
-        """
-        Remove unsupported TSS markup tags while preserving supported ones.
-        """
         try:
+            from podcastfy.tts.base import TTSProvider
             input_text = ContentCleanerMixin._clean_scratchpad(input_text)
-            supported_tags = ["speak", "lang", "p", "phoneme", "s", "sub"]
-            supported_tags.extend(additional_tags)
-
-            pattern = r"</?(?!(?:" + "|".join(supported_tags) + r")\b)[^>]+>"
-            cleaned_text = re.sub(pattern, "", input_text)
-            cleaned_text = re.sub(r"\n\s*\n", "\n", cleaned_text)
-            cleaned_text = re.sub(r"\*", "", cleaned_text)
-
-            for tag in additional_tags:
-                cleaned_text = re.sub(
-                    f'<{tag}>(.*?)(?=<(?:{"|".join(additional_tags)})>|$)',
-                    f"<{tag}>\\1</{tag}>",
-                    cleaned_text,
-                    flags=re.DOTALL,
-                )
-            
-
-
-            return cleaned_text.strip()
-            
+            supported_tags = COMMON_SSML_TAGS.copy() + ["speak"]
+            tts_provider = TTSProvider.__new__(TTSProvider)
+            return tts_provider.clean_tss_markup(
+                input_text,
+                additional_tags=list(additional_tags),
+                supported_tags=supported_tags,
+            )
         except Exception as e:
             logger.error(f"Error cleaning TSS markup: {str(e)}")
             return input_text
@@ -401,33 +411,23 @@ class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
                             config_conversation: Dict[str, Any],
                             image_file_paths: Optional[List[str]] = None,
                             image_path_keys: Optional[List[str]] = None,
-                            input_texts: str = "") -> Dict[str, Any]:
+                            input_texts: str = "") -> PromptParams:
         """Compose prompt parameters for standard content generation."""
         if image_file_paths is None:
             image_file_paths = []
         if image_path_keys is None:
             image_path_keys = []
-        prompt_params = {
-            "input_text": input_texts,
-            "conversation_style": ", ".join(
-                config_conversation.get("conversation_style", [])
-            ),
-            "roles_person1": config_conversation.get("roles_person1"),
-            "roles_person2": config_conversation.get("roles_person2"),
-            "dialogue_structure": ", ".join(
-                config_conversation.get("dialogue_structure", [])
-            ),
-            "podcast_name": config_conversation.get("podcast_name"),
-            "podcast_tagline": config_conversation.get("podcast_tagline"),
-            "output_language": config_conversation.get("output_language"),
-            "engagement_techniques": ", ".join(
-                config_conversation.get("engagement_techniques", [])
-            ),
-        }
-
-        # Add image paths to parameters if any
-        for key, path in zip(image_path_keys, image_file_paths):
-            prompt_params[key] = path
+        prompt_params = PromptParams(
+            input_text=input_texts,
+            conversation_style=config_conversation.get("conversation_style", []),
+            roles_person1=config_conversation.get("roles_person1", ""),
+            roles_person2=config_conversation.get("roles_person2", ""),
+            dialogue_structure=config_conversation.get("dialogue_structure", []),
+            podcast_name=config_conversation.get("podcast_name", ""),
+            podcast_tagline=config_conversation.get("podcast_tagline", ""),
+            output_language=config_conversation.get("output_language", "English"),
+            engagement_techniques=config_conversation.get("engagement_techniques", []),
+        )
 
         return prompt_params
 
@@ -582,36 +582,30 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
                             config_conversation: Dict[str, Any],
                             image_file_paths: Optional[List[str]] = None,
                             image_path_keys: Optional[List[str]] = None,
-                            input_texts: str = "") -> Dict[str, Any]:
+                            input_texts: str = "") -> PromptParams:
         """Compose prompt parameters for long-form content generation."""
         if image_file_paths is None:
             image_file_paths = []
         if image_path_keys is None:
             image_path_keys = []
-        return {
-            "conversation_style": ", ".join(
-                config_conversation.get("conversation_style", [])
-            ),
-            "roles_person1": config_conversation.get("roles_person1"),
-            "roles_person2": config_conversation.get("roles_person2"),
-            "dialogue_structure": ", ".join(
-                config_conversation.get("dialogue_structure", [])
-            ),
-            "podcast_name": config_conversation.get("podcast_name"),
-            "podcast_tagline": config_conversation.get("podcast_tagline"),
-            "output_language": config_conversation.get("output_language"),
-            "engagement_techniques": ", ".join(
-                config_conversation.get("engagement_techniques", [])
-            ),
-        }
+        return PromptParams(
+            conversation_style=config_conversation.get("conversation_style", []),
+            roles_person1=config_conversation.get("roles_person1", ""),
+            roles_person2=config_conversation.get("roles_person2", ""),
+            dialogue_structure=config_conversation.get("dialogue_structure", []),
+            podcast_name=config_conversation.get("podcast_name", ""),
+            podcast_tagline=config_conversation.get("podcast_tagline", ""),
+            output_language=config_conversation.get("output_language", "English"),
+            engagement_techniques=config_conversation.get("engagement_techniques", []),
+        )
 
 
 class ContentGenerator:
     def __init__(
         self, 
         is_local: bool=False, 
-        model_name: str="gemini-2.5-flash", 
-        api_key_label: str="GEMINI_API_KEY",
+        model_name: str=DEFAULT_GEMINI_LLM, 
+        api_key_label: str=ApiKeyLabel.GEMINI,
         conversation_config: Optional[Dict[str, Any]] = None
     ):
         """
@@ -645,7 +639,7 @@ class ContentGenerator:
             is_local=is_local,
             temperature=self.config_conversation.creativity,
             max_output_tokens=self.content_generator_config.get(
-                "max_output_tokens", 8192
+                "max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS
             ),
             model_name=model_name,
             api_key_label=api_key_label,
@@ -653,21 +647,16 @@ class ContentGenerator:
 
         self.llm = llm_backend.llm
 
-
-
-        # Initialize strategies with configs
-        self.strategies = {
-            True: LongFormContentStrategy(
-                self.llm,
-                self.content_generator_config,
-                self.config_conversation
-            ),
-            False: StandardContentStrategy(
-                self.llm,
-                self.content_generator_config,
-                self.config_conversation
-            )
-        }
+        self.standard_strategy = StandardContentStrategy(
+            self.llm,
+            self.content_generator_config,
+            self.config_conversation
+        )
+        self.longform_strategy = LongFormContentStrategy(
+            self.llm,
+            self.content_generator_config,
+            self.config_conversation
+        )
 
     def __compose_prompt(self, num_images: int, longform: bool=False):
         """
@@ -695,7 +684,7 @@ class ContentGenerator:
         # Only add text content if input_text is not empty
         text_content = {
             "type": "text",
-            "text": "Please analyze this input and generate a conversation. {input_text}",
+            "text": "Please analyze this input and generate a conversation. {input_text}",  # TODO: candidate for external config
         }
         messages.append(text_content)
 
@@ -762,7 +751,7 @@ class ContentGenerator:
         """
         try:
             # Get appropriate strategy
-            strategy = self.strategies[longform]
+            strategy = self.longform_strategy if longform else self.standard_strategy
             
             # Validate inputs for chosen strategy
             strategy.validate(input_texts, image_file_paths)

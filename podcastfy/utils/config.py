@@ -12,6 +12,9 @@ from typing import Any, Dict, Optional
 import yaml
 from pydantic import BaseModel, Field
 
+from podcastfy.utils.constants import DEFAULT_GEMINI_LLM, DEFAULT_MAX_OUTPUT_TOKENS, MIN_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS
+from podcastfy.utils.enums import ApiKeyLabel
+
 
 
 def get_config_path(config_file: str = 'config.yaml') -> Optional[str]:
@@ -97,7 +100,7 @@ class Config:
 		for key, value in kwargs.items():
 			if key in self.config:
 				self.config[key] = value
-			elif key in ['JINA_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'ELEVENLABS_API_KEY']:
+			elif key in [e.value for e in ApiKeyLabel]:
 				setattr(self, key, value)
 			else:
 				raise ValueError(f"Unknown configuration key: {key}")
@@ -119,9 +122,9 @@ class Config:
 		return self.config.get(key, default)
 
 class ContentGeneratorConfigModel(BaseModel):
-    llm_model: str = "gemini-2.5-flash"
-    meta_llm_model: str = "gemini-2.5-flash"
-    max_output_tokens: int = Field(default=8192, ge=256, le=65536)
+    llm_model: str = DEFAULT_GEMINI_LLM
+    meta_llm_model: str = DEFAULT_GEMINI_LLM
+    max_output_tokens: int = Field(default=DEFAULT_MAX_OUTPUT_TOKENS, ge=MIN_OUTPUT_TOKENS, le=MAX_OUTPUT_TOKENS)
     prompt_template: str = "souzatharsis/podcastfy_multimodal_cleanmarkup"
     prompt_commit: str = "b2365f11"
     longform_prompt_template: str = "souzatharsis/podcastfy_longform"

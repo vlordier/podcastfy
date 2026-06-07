@@ -3,14 +3,12 @@
 import openai
 from typing import List, Optional
 from ..base import TTSProvider
+from podcastfy.utils.constants import OPENAI_TTS_MODEL, COMMON_SSML_TAGS
 
 class OpenAITTS(TTSProvider):
     """OpenAI Text-to-Speech provider."""
     
-    # Provider-specific SSML tags
-    PROVIDER_SSML_TAGS: List[str] = ['break', 'emphasis']
-    
-    def __init__(self, api_key: Optional[str] = None, model: str = "tts-1-hd"):
+    def __init__(self, api_key: Optional[str] = None, model: str = OPENAI_TTS_MODEL):
         """
         Initialize OpenAI TTS provider.
         
@@ -26,7 +24,7 @@ class OpenAITTS(TTSProvider):
             
     def get_supported_tags(self) -> List[str]:
         """Get all supported SSML tags including provider-specific ones."""
-        return self.PROVIDER_SSML_TAGS
+        return COMMON_SSML_TAGS + ['break', 'emphasis']
         
     def generate_audio(self, text: str, voice: str, model: str, voice2: str = None) -> bytes:
         """Generate audio using OpenAI API."""

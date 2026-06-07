@@ -16,6 +16,8 @@ from podcastfy.text_to_speech import TextToSpeech
 from podcastfy.utils.config import Config, load_config
 from podcastfy.utils.config_conversation import load_conversation_config
 from podcastfy.utils.logger import setup_logger
+from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
+from podcastfy.utils.constants import DEFAULT_TRANSCRIPTS_DIR, DEFAULT_AUDIO_DIR
 from typing import List, Optional, Dict, Any
 import copy
 
@@ -110,7 +112,7 @@ def process_content(
             # Generate Q&A content using output directory from conversation config
             random_filename = f"transcript_{uuid.uuid4().hex}.txt"
             transcript_filepath = os.path.join(
-                output_directories.get("transcripts", "data/transcripts"),
+                output_directories.get("transcripts", DEFAULT_TRANSCRIPTS_DIR),
                 random_filename,
             )
             qa_content = content_generator.generate_qa_content(
@@ -122,8 +124,14 @@ def process_content(
 
         if generate_audio:
             api_key = None
-            if tts_model != "edge":
-                api_key = getattr(config, f"{tts_model.upper().replace('MULTI', '')}_API_KEY")
+            if tts_model != TTSProvider.EDGE:
+                api_key_label = {
+                    TTSProvider.OPENAI: ApiKeyLabel.OPENAI,
+                    TTSProvider.ELEVENLABS: ApiKeyLabel.ELEVENLABS,
+                    TTSProvider.GEMINI: ApiKeyLabel.GEMINI,
+                    TTSProvider.GEMINI_MULTI: ApiKeyLabel.GEMINI,
+                }.get(TTSProvider(tts_model))
+                api_key = getattr(config, api_key_label.value, "") if api_key_label else ""
 
             text_to_speech = TextToSpeech(
                 model=tts_model,
@@ -133,7 +141,7 @@ def process_content(
 
             random_filename = f"podcast_{uuid.uuid4().hex}.mp3"
             audio_file = os.path.join(
-                output_directories.get("audio", "data/audio"), random_filename
+                output_directories.get("audio", DEFAULT_AUDIO_DIR), random_filename
             )
             text_to_speech.convert_to_speech(qa_content, audio_file)
             logger.info(f"Podcast generated successfully using {tts_model} TTS model")
@@ -215,7 +223,7 @@ def main(
         # Use default TTS model from conversation config if not specified
         if tts_model is None:
             tts_config = load_conversation_config().get("text_to_speech", {})
-            tts_model = tts_config.get("default_tts_model", "openai")
+            tts_model = tts_config.get("default_tts_model", TTSProvider.OPENAI.value)
 
         if transcript:
             if image_paths:
@@ -339,7 +347,7 @@ def generate_podcast(
 
         # Use provided tts_model if specified, otherwise use the one from config
         if tts_model is None:
-            tts_model = conversation_config.get("default_tts_model", "openai")
+            tts_model = conversation_config.get("default_tts_model", TTSProvider.OPENAI.value)
 
         if transcript_file:
             if image_paths:

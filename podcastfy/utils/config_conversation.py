@@ -12,6 +12,8 @@ import yaml
 
 from pydantic import BaseModel, Field, field_validator
 
+from podcastfy.utils.enums import TTSProvider, AudioFormat
+from podcastfy.utils.constants import DEFAULT_MAX_NUM_CHUNKS, DEFAULT_MIN_CHUNK_SIZE, DEFAULT_CREATIVITY
 from podcastfy.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -72,13 +74,13 @@ class ConversationConfigModel(BaseModel):
     podcast_tagline: str = "Your Personal Generative AI Podcast"
     output_language: str = "English"
     engagement_techniques: list[str] = Field(default_factory=lambda: ["rhetorical questions", "anecdotes", "analogies", "humor"])
-    creativity: float = Field(default=1.0, ge=0, le=2)
+    creativity: float = Field(default=DEFAULT_CREATIVITY, ge=0, le=2)
     user_instructions: str = ""
-    max_num_chunks: int = Field(default=8, ge=1, le=50)
-    min_chunk_size: int = Field(default=600, ge=50)
+    max_num_chunks: int = Field(default=DEFAULT_MAX_NUM_CHUNKS, ge=1, le=50)
+    min_chunk_size: int = Field(default=DEFAULT_MIN_CHUNK_SIZE, ge=50)
     text_to_speech: dict[str, TTSProviderConfig] = Field(default_factory=dict)
-    default_tts_model: str = "openai"
-    audio_format: str = "mp3"
+    default_tts_model: TTSProvider = TTSProvider.OPENAI
+    audio_format: AudioFormat = AudioFormat.MP3
     temp_audio_dir: str = "data/audio/tmp/"
     ending_message: str = "See You Next Time!"
     output_directories: OutputDirectories = Field(default_factory=OutputDirectories)
@@ -306,13 +308,13 @@ def load_conversation_config_model(config_conversation: Optional[Dict[str, Any]]
 		podcast_tagline=raw.get("podcast_tagline", "Your Personal Generative AI Podcast"),
 		output_language=raw.get("output_language", "English"),
 		engagement_techniques=raw.get("engagement_techniques", ["rhetorical questions", "anecdotes", "analogies", "humor"]),
-		creativity=float(raw.get("creativity", 1.0)),
+		creativity=float(raw.get("creativity", DEFAULT_CREATIVITY)),
 		user_instructions=raw.get("user_instructions", ""),
-		max_num_chunks=raw.get("max_num_chunks", 8),
-		min_chunk_size=raw.get("min_chunk_size", 600),
+		max_num_chunks=raw.get("max_num_chunks", DEFAULT_MAX_NUM_CHUNKS),
+		min_chunk_size=raw.get("min_chunk_size", DEFAULT_MIN_CHUNK_SIZE),
 		text_to_speech=tts_providers,
-		default_tts_model=tts_raw.get("default_tts_model", raw.get("default_tts_model", "openai")),
-		audio_format=tts_raw.get("audio_format", "mp3"),
+		default_tts_model=tts_raw.get("default_tts_model", raw.get("default_tts_model", TTSProvider.OPENAI)),
+		audio_format=tts_raw.get("audio_format", AudioFormat.MP3),
 		temp_audio_dir=tts_raw.get("temp_audio_dir", "data/audio/tmp/"),
 		ending_message=tts_raw.get("ending_message", "See You Next Time!"),
 		output_directories=OutputDirectories(**output_dirs_raw) if output_dirs_raw else OutputDirectories(),

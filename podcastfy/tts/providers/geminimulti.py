@@ -7,6 +7,16 @@ import re
 import logging
 from io import BytesIO
 from pydub import AudioSegment
+from podcastfy.utils.constants import (
+    DEFAULT_CHUNK_BYTES,
+    DEFAULT_TURN_CHARS,
+    GEMINI_MULTI_TTS_MODEL,
+    GEMINI_MULTI_VOICE1,
+    GEMINI_MULTI_VOICE2,
+    GEMINI_MULTI_LANGUAGE,
+    DEFAULT_BITRATE,
+    DEFAULT_CODEC,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +25,7 @@ class GeminiMultiTTS(TTSProvider):
     
     multi_speaker: ClassVar[bool] = True
     
-    def __init__(self, api_key: str = None, model: str = "en-US-Studio-MultiSpeaker") -> None:
+    def __init__(self, api_key: str = None, model: str = GEMINI_MULTI_TTS_MODEL) -> None:
         """
         Initialize Google Cloud TTS provider.
         
@@ -32,7 +42,7 @@ class GeminiMultiTTS(TTSProvider):
             logger.error(f"Failed to initialize GeminiMultiTTS client: {str(e)}")
             raise
             
-    def chunk_text(self, text: str, max_bytes: int = 1300) -> List[str]:
+    def chunk_text(self, text: str, max_bytes: int = DEFAULT_CHUNK_BYTES) -> List[str]:
         """
         Split text into chunks that fit within Google TTS byte limit while preserving speaker tags.
         
@@ -84,7 +94,7 @@ class GeminiMultiTTS(TTSProvider):
         logger.info(f"Created {len(chunks)} chunks from input text")
         return chunks
 
-    def split_turn_text(self, text: str, max_chars: int = 500) -> List[str]:
+    def split_turn_text(self, text: str, max_chars: int = DEFAULT_TURN_CHARS) -> List[str]:
         """
         Split turn text into smaller chunks at sentence boundaries.
         
@@ -199,8 +209,8 @@ class GeminiMultiTTS(TTSProvider):
             combined.export(
                 output,
                 format="mp3",
-                codec="libmp3lame",
-                bitrate="320k"
+                codec=DEFAULT_CODEC,
+                bitrate=DEFAULT_BITRATE
             )
             
             result = output.getvalue()
@@ -216,8 +226,8 @@ class GeminiMultiTTS(TTSProvider):
                 return audio_chunks[0]
             raise RuntimeError(f"Failed to merge audio chunks and no valid fallback found: {str(e)}")
 
-    def generate_audio(self, text: str, voice: str = "R", model: str = "en-US-Studio-MultiSpeaker", 
-                       voice2: str = "S", ending_message: str = "") -> bytes:
+    def generate_audio(self, text: str, voice: str = GEMINI_MULTI_VOICE1, model: str = GEMINI_MULTI_TTS_MODEL, 
+                       voice2: str = GEMINI_MULTI_VOICE2, ending_message: str = "") -> bytes:
         """
         Generate audio using Google Cloud TTS API with multi-speaker support.
         Handles text longer than 5000 bytes by chunking and merging.
@@ -275,7 +285,7 @@ class GeminiMultiTTS(TTSProvider):
                 logger.debug("Calling synthesize_speech API")
                 # Set voice parameters
                 voice_params = texttospeech_v1.VoiceSelectionParams(
-                    language_code="en-US",
+                    language_code=GEMINI_MULTI_LANGUAGE,
                     name=model
                 )
                 
@@ -302,7 +312,8 @@ class GeminiMultiTTS(TTSProvider):
     def get_supported_tags(self) -> List[str]:
         """Get supported SSML tags."""
         # Add any Google-specific SSML tags to the common ones
-        return self.COMMON_SSML_TAGS
+        from podcastfy.utils.constants import COMMON_SSML_TAGS
+        return list(COMMON_SSML_TAGS)
         
     def validate_parameters(self, text: str, voice: str, model: str) -> None:
         """
@@ -319,7 +330,7 @@ class GeminiMultiTTS(TTSProvider):
         super().validate_parameters(text, voice, model)
         
         # Additional validation for multi-speaker model
-        if model != "en-US-Studio-MultiSpeaker":
+        if model != GEMINI_MULTI_TTS_MODEL:
             raise ValueError(
-                "Google Multi-speaker TTS requires model='en-US-Studio-MultiSpeaker'"
+                f"Google Multi-speaker TTS requires model='{GEMINI_MULTI_TTS_MODEL}'"
             )

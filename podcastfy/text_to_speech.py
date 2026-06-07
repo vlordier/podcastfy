@@ -17,6 +17,14 @@ from pydub import AudioSegment
 from .tts.factory import TTSProviderFactory
 from .utils.config import load_config
 from .utils.config_conversation import load_conversation_config_model, TTSProviderConfig
+from .tts.base import QAPair
+from podcastfy.utils.constants import (
+    GEMINI_MULTI_TTS_MODEL,
+    GEMINI_MULTI_VOICE1,
+    GEMINI_MULTI_VOICE2,
+    DEFAULT_BITRATE,
+    DEFAULT_CODEC,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +102,9 @@ class TextToSpeech:
             if self.provider.multi_speaker:
                 audio_data = self.provider.generate_audio(
                     cleaned_text,
-                    voice="S",
-                    model="en-US-Studio-MultiSpeaker",
-                    voice2="R",
+                    voice=GEMINI_MULTI_VOICE1,
+                    model=GEMINI_MULTI_TTS_MODEL,
+                    voice2=GEMINI_MULTI_VOICE2,
                     ending_message=self.ending_message,
                 )
                 try:
@@ -107,8 +115,8 @@ class TextToSpeech:
                     segment.export(
                         output_file,
                         format=self.audio_format,
-                        codec="libmp3lame",
-                        bitrate="320k"
+                        codec=DEFAULT_CODEC,
+                        bitrate=DEFAULT_BITRATE
                     )
                 except Exception as e:
                     logger.error(f"Error during audio processing: {str(e)}")

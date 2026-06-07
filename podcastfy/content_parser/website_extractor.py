@@ -17,6 +17,7 @@ from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
 from .extractor_base import ContentExtractor as ContentExtractorABC
 from typing import List
 from playwright.sync_api import sync_playwright
+from podcastfy.utils.constants import DEFAULT_TIMEOUT_SECONDS, POST_NAVIGATION_WAIT_MS
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class WebsiteExtractor(ContentExtractorABC):
 		self.website_extractor_config = self.config.get('website_extractor', {})
 		self.unwanted_tags = self.website_extractor_config.get('unwanted_tags', [])
 		self.user_agent = self.website_extractor_config.get('user_agent', 'Mozilla/5.0')
-		self.timeout = self.website_extractor_config.get('timeout', 10)
+		self.timeout = self.website_extractor_config.get('timeout', DEFAULT_TIMEOUT_SECONDS)
 		self.remove_patterns = self.website_extractor_config.get('markdown_cleaning', {}).get('remove_patterns', [])
 
 	def extract_content(self, url: str) -> str:
@@ -109,7 +110,7 @@ class WebsiteExtractor(ContentExtractorABC):
 				})
 				page.goto(url, wait_until="networkidle", timeout=self.timeout * 1000)
 				# Optionally wait for DOM to be ready
-				page.wait_for_timeout(500)
+				page.wait_for_timeout(POST_NAVIGATION_WAIT_MS)
 				html_content = page.content()
 				context.close()
 				browser.close()

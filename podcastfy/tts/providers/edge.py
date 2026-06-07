@@ -5,6 +5,7 @@ import os
 import tempfile
 from typing import List
 from ..base import TTSProvider
+from podcastfy.utils.constants import COMMON_SSML_TAGS
 
 class EdgeTTS(TTSProvider):
     def __init__(self, api_key: str = None, model: str = None) -> None:
@@ -48,4 +49,4 @@ class EdgeTTS(TTSProvider):
         
     def get_supported_tags(self) -> List[str]:
         """Get supported SSML tags."""
-        return self.COMMON_SSML_TAGS
+        return list(COMMON_SSML_TAGS)

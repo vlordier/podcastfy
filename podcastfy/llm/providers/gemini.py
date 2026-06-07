@@ -5,6 +5,11 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from ..base import LLMProvider
+from podcastfy.utils.constants import (
+    DEFAULT_PRESENCE_PENALTY,
+    DEFAULT_FREQUENCY_PENALTY,
+    DEFAULT_MAX_OUTPUT_TOKENS,
+)
 
 
 class GeminiLLM(LLMProvider):
@@ -12,13 +17,13 @@ class GeminiLLM(LLMProvider):
         self.model_name = model
         common_params = {
             "temperature": kwargs.get("temperature", 1.0),
-            "presence_penalty": 0.75,
-            "frequency_penalty": 0.75,
+            "presence_penalty": DEFAULT_PRESENCE_PENALTY,
+            "frequency_penalty": DEFAULT_FREQUENCY_PENALTY,
         }
         self.llm = ChatGoogleGenerativeAI(
             api_key=api_key or os.environ.get("GEMINI_API_KEY", ""),
             model=model,
-            max_output_tokens=kwargs.get("max_output_tokens", 8192),
+            max_output_tokens=kwargs.get("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS),
             **common_params,
         )
 

@@ -4,13 +4,14 @@ from google.cloud import texttospeech_v1
 from typing import List
 from ..base import TTSProvider
 import logging
+from podcastfy.utils.constants import GEMINI_TTS_VOICE
 
 logger = logging.getLogger(__name__)
 
 class GeminiTTS(TTSProvider):
     """Google Cloud Text-to-Speech provider for single speaker."""
     
-    def __init__(self, api_key: str = None, model: str = "en-US-Journey-F"):
+    def __init__(self, api_key: str = None, model: str = GEMINI_TTS_VOICE):
         """
         Initialize Google Cloud TTS provider.
         
@@ -27,7 +28,7 @@ class GeminiTTS(TTSProvider):
             logger.error(f"Failed to initialize Google TTS client: {str(e)}")
             raise
 
-    def generate_audio(self, text: str, voice: str = "en-US-Journey-F", 
+    def generate_audio(self, text: str, voice: str = GEMINI_TTS_VOICE, 
                       model: str = None, voice2: str = None, **kwargs) -> bytes:
         """
         Generate audio using Google Cloud TTS API.
@@ -80,7 +81,8 @@ class GeminiTTS(TTSProvider):
     
     def get_supported_tags(self) -> List[str]:
         """Get supported SSML tags."""
-        return self.COMMON_SSML_TAGS
+        from podcastfy.utils.constants import COMMON_SSML_TAGS
+        return list(COMMON_SSML_TAGS)
         
     def validate_parameters(self, text: str, voice: str, model: str) -> None:
         """

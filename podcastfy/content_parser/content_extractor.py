@@ -14,6 +14,7 @@ from .pdf_extractor import PDFExtractor
 from .extractor_factory import ExtractorFactory
 from google import genai
 from google.genai import types
+from podcastfy.utils.constants import DEFAULT_GEMINI_LLM, PREVIEW_CHARS
 
 # Register extractors (order matters — more specific first)
 ExtractorFactory.register(PDFExtractor)
@@ -80,7 +81,7 @@ class ContentExtractor:
 			
 			logger.info(f"Generating content with Google Search grounding for topic: {topic}")
 			response = client.models.generate_content(
-				model="gemini-2.5-flash",
+				model=DEFAULT_GEMINI_LLM,
 				contents=prompt,
 				config=config
 			)
@@ -113,7 +114,7 @@ def main(seed: int = 42) -> None:
 			content = extractor.extract_content(source)
 
 			# Print the first 500 characters of the extracted content
-			logger.info(f"Extracted content (first 500 characters):\n{content[:500]}...")
+			logger.info(f"Extracted content (first {PREVIEW_CHARS} characters):\n{content[:PREVIEW_CHARS]}...")
 
 			# Print the total length of the extracted content
 			logger.info(f"Total length of extracted content: {len(content)} characters")
