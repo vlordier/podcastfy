@@ -10,6 +10,8 @@ import sys
 from typing import Any, Dict, Optional, List
 import yaml
 
+from pydantic import BaseModel, Field
+
 from podcastfy.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -48,6 +50,20 @@ def get_conversation_config_path(config_file: str = 'conversation_config.yaml') 
 	except (FileNotFoundError, PermissionError, OSError) as e:
 		logger.error(f"Error locating {config_file}: {e}")
 		return None
+
+class TTSProviderConfig(BaseModel):
+    """Pydantic model for TTS provider configuration."""
+    default_voices: dict[str, str] = Field(default_factory=dict)
+    model: str | None = None
+
+
+class ConversationConfigModel(BaseModel):
+    """Pydantic model for conversation configuration."""
+    text_to_speech: dict[str, TTSProviderConfig] = Field(default_factory=dict)
+    default_tts_model: str = "openai"
+    creativity: float = 1.0
+    ending_message: str = "See You Next Time!"
+
 
 class NestedConfig:
 	"""
@@ -210,6 +226,41 @@ def load_conversation_config(config_conversation: Optional[Dict[str, Any]] = Non
 		ConversationConfig: An instance of the ConversationConfig class.
 	"""
 	return ConversationConfig(config_conversation)
+
+def load_conversation_config_model(config_conversation: Optional[Dict[str, Any]] = None) -> ConversationConfigModel:
+	"""
+	Load and return a ConversationConfigModel instance (Pydantic-validated).
+
+	Args:
+		config_conversation (Optional[Dict[str, Any]]): Configuration dictionary to use.
+			If None, default config will be loaded from conversation_config.yaml.
+
+	Returns:
+		ConversationConfigModel: An instance of the Pydantic model.
+	"""
+	if config_conversation is None:
+		config_path = get_conversation_config_path()
+		if config_path:
+			with open(config_path, 'r') as file:
+				raw = yaml.safe_load(file)
+		else:
+			raw = {}
+	else:
+		raw = config_conversation
+
+	# Parse TTS provider configs
+	tts_raw = raw.get("text_to_speech", {})
+	tts_providers = {}
+	for provider_name, provider_cfg in tts_raw.items():
+		if isinstance(provider_cfg, dict):
+			tts_providers[provider_name] = TTSProviderConfig(**provider_cfg)
+
+	return ConversationConfigModel(
+		text_to_speech=tts_providers,
+		default_tts_model=raw.get("default_tts_model", "openai"),
+		creativity=float(raw.get("creativity", 1.0)),
+		ending_message=raw.get("ending_message", "See You Next Time!"),
+	)
 
 def main() -> None:
 	"""
