@@ -99,7 +99,7 @@ class LongFormContentGenerator:
         7. Generate a long conversation - output max_output_tokens tokens
     """
     
-    def __init__(self, chain, llm, config_conversation: Dict[str, Any], ):
+    def __init__(self, chain: Any, llm: Any, config_conversation: Dict[str, Any], ):
         """
         Initialize ConversationGenerator.
         
@@ -293,7 +293,6 @@ class ContentCleanerMixin:
         Remove scratchpad blocks, plaintext blocks, standalone triple backticks, any string enclosed in brackets, and underscores around words.
         """
         try:
-            import re
             pattern = r'```scratchpad\n.*?```\n?|```plaintext\n.*?```\n?|```\n?|\[.*?\]'
             cleaned_text = re.sub(pattern, '', text, flags=re.DOTALL)
             # Remove "xml" if followed by </Person1> or </Person2>
@@ -372,8 +371,8 @@ class ContentGenerationStrategy(ABC):
     @abstractmethod
     def compose_prompt_params(self,
                             config_conversation: Dict[str, Any],
-                            image_file_paths: List[str] = [],
-                            image_path_keys: List[str] = [],
+                            image_file_paths: Optional[List[str]] = None,
+                            image_path_keys: Optional[List[str]] = None,
                             input_texts: str = "") -> Dict[str, Any]:
         """Compose prompt parameters according to strategy."""
         pass
@@ -419,10 +418,14 @@ class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
 
     def compose_prompt_params(self,
                             config_conversation: Dict[str, Any],
-                            image_file_paths: List[str] = [],
-                            image_path_keys: List[str] = [],
+                            image_file_paths: Optional[List[str]] = None,
+                            image_path_keys: Optional[List[str]] = None,
                             input_texts: str = "") -> Dict[str, Any]:
         """Compose prompt parameters for standard content generation."""
+        if image_file_paths is None:
+            image_file_paths = []
+        if image_path_keys is None:
+            image_path_keys = []
         prompt_params = {
             "input_text": input_texts,
             "conversation_style": ", ".join(
@@ -596,10 +599,14 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
 
     def compose_prompt_params(self,
                             config_conversation: Dict[str, Any],
-                            image_file_paths: List[str] = [],
-                            image_path_keys: List[str] = [],
+                            image_file_paths: Optional[List[str]] = None,
+                            image_path_keys: Optional[List[str]] = None,
                             input_texts: str = "") -> Dict[str, Any]:
         """Compose prompt parameters for long-form content generation."""
+        if image_file_paths is None:
+            image_file_paths = []
+        if image_path_keys is None:
+            image_path_keys = []
         return {
             "conversation_style": ", ".join(
                 config_conversation.get("conversation_style", [])

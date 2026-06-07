@@ -7,7 +7,7 @@ from typing import List
 from ..base import TTSProvider
 
 class EdgeTTS(TTSProvider):
-    def __init__(self, api_key: str = None, model: str = None):
+    def __init__(self, api_key: str = None, model: str = None) -> None:
         """
         Initialize Edge TTS provider.
         

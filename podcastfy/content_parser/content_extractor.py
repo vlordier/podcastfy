@@ -8,7 +8,7 @@ extraction, delegating to specialized extractors based on the source type.
 
 import logging
 import re
-from typing import List, Union
+from typing import List
 from urllib.parse import urlparse
 from .youtube_transcriber import YouTubeTranscriber
 from .website_extractor import WebsiteExtractor

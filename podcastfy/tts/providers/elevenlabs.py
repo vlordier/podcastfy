@@ -5,7 +5,7 @@ from ..base import TTSProvider
 from typing import List
 
 class ElevenLabsTTS(TTSProvider):
-    def __init__(self, api_key: str, model: str = "eleven_multilingual_v2"):
+    def __init__(self, api_key: str, model: str = "eleven_multilingual_v2") -> None:
         """
         Initialize ElevenLabs TTS provider.
         

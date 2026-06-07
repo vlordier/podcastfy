@@ -97,9 +97,6 @@ class TextToSpeech:
                 "multi" in self.provider.model.lower()
             ):  # refactor: We should have instead MultiSpeakerTTS and SingleSpeakerTTS classes
                 provider_config = self._get_provider_config()
-                voice = provider_config.get("default_voices", {}).get("question")
-                voice2 = provider_config.get("default_voices", {}).get("answer")
-                model = provider_config.get("model")
                 audio_data_list = self.provider.generate_audio(
                     cleaned_text,
                     voice="S",
@@ -118,9 +115,6 @@ class TextToSpeech:
                     
                     for i, chunk in enumerate(audio_data_list):
                         # Save chunk to temporary file
-                        #temp_file = "./tmp.mp3"
-                        #with open(temp_file, "wb") as f:
-                        #    f.write(chunk)
                         
                         segment = AudioSegment.from_file(io.BytesIO(chunk))
                         logger.info(f"################### Loaded chunk {i}, duration: {len(segment)}ms")
@@ -286,20 +280,6 @@ class TextToSpeech:
                     "Each Person1 section should be followed by a Person2 section."
                 )
 
-                # Check for malformed tags (unclosed or improperly nested)
-                stack = []
-                for match in re.finditer(r"<(/?)Person([12])>", text):
-                    tag = match.group(0)
-                    if tag.startswith("</"):
-                        if not stack or stack[-1] != tag[2:-1]:
-                            raise ValueError(f"Improperly nested tags near: {tag}")
-                        stack.pop()
-                    else:
-                        stack.append(tag[1:-1])
-
-                if stack:
-                    raise ValueError(f"Unclosed tags: {', '.join(stack)}")
-
             logger.debug("Transcript format validation passed")
 
         except ValueError as e:
@@ -307,7 +287,7 @@ class TextToSpeech:
             raise
         except Exception as e:
             logger.error(f"Unexpected error during transcript validation: {str(e)}")
-            raise ValueError(f"Invalid transcript format: {str(e)}")
+            raise ValueError(f"Invalid transcript format: {str(e)}") from e
 
 
 def main(seed: int = 42) -> None:

@@ -10,7 +10,11 @@ import sys
 from typing import Any, Dict, Optional, List
 import yaml
 
-def get_conversation_config_path(config_file: str = 'conversation_config.yaml'):
+from podcastfy.utils.logger import setup_logger
+
+logger = setup_logger(__name__)
+
+def get_conversation_config_path(config_file: str = 'conversation_config.yaml') -> Optional[str]:
 	"""
 	Get the path to the conversation_config.yaml file.
 	
@@ -41,8 +45,8 @@ def get_conversation_config_path(config_file: str = 'conversation_config.yaml'):
 		
 		raise FileNotFoundError(f"{config_file} not found")
 	
-	except Exception as e:
-		print(f"Error locating {config_file}: {str(e)}")
+	except (FileNotFoundError, PermissionError, OSError) as e:
+		logger.error(f"Error locating {config_file}: {e}")
 		return None
 
 class NestedConfig:
