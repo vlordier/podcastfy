@@ -1,6 +1,6 @@
 """Google Cloud Text-to-Speech provider implementation."""
 
-from google.cloud import texttospeech_v1beta1
+from google.cloud import texttospeech_v1
 from typing import List
 from ..base import TTSProvider
 import re
@@ -22,7 +22,7 @@ class GeminiMultiTTS(TTSProvider):
         """
         self.model = model
         try:
-            self.client = texttospeech_v1beta1.TextToSpeechClient(
+            self.client = texttospeech_v1.TextToSpeechClient(
                 client_options={'api_key': api_key} if api_key else None
             )
             logger.info("Successfully initialized GeminiMultiTTS client")
@@ -232,7 +232,7 @@ class GeminiMultiTTS(TTSProvider):
             for i, chunk in enumerate(text_chunks, 1):
                 logger.debug(f"Processing chunk {i}/{len(text_chunks)}")
                 # Create multi-speaker markup
-                multi_speaker_markup = texttospeech_v1beta1.MultiSpeakerMarkup()
+                multi_speaker_markup = texttospeech_v1.MultiSpeakerMarkup()
                 # Get Q&A pairs for this chunk
                 qa_pairs = self.split_qa(chunk, "", self.get_supported_tags())
                 logger.debug(f"Found {len(qa_pairs)} Q&A pairs in chunk {i}")
@@ -246,7 +246,7 @@ class GeminiMultiTTS(TTSProvider):
                     logger.debug(f"######################### Question chunks: {question_chunks}")
                     for q_chunk in question_chunks:
                         logger.debug(f"Adding question turn: '{q_chunk[:50]}...' (length: {len(q_chunk)})")
-                        q_turn = texttospeech_v1beta1.MultiSpeakerMarkup.Turn()
+                        q_turn = texttospeech_v1.MultiSpeakerMarkup.Turn()
                         q_turn.text = q_chunk
                         q_turn.speaker = voice
                         multi_speaker_markup.turns.append(q_turn)
@@ -258,7 +258,7 @@ class GeminiMultiTTS(TTSProvider):
                         logger.debug(f"######################### Answer chunks: {answer_chunks}")
                         for a_chunk in answer_chunks:
                             logger.debug(f"Adding answer turn: '{a_chunk[:50]}...' (length: {len(a_chunk)})")
-                            a_turn = texttospeech_v1beta1.MultiSpeakerMarkup.Turn()
+                            a_turn = texttospeech_v1.MultiSpeakerMarkup.Turn()
                             a_turn.text = a_chunk
                             a_turn.speaker = voice2
                             multi_speaker_markup.turns.append(a_turn)
@@ -266,20 +266,20 @@ class GeminiMultiTTS(TTSProvider):
                 logger.debug(f"Created markup with {len(multi_speaker_markup.turns)} turns")
                 
                 # Create synthesis input with multi-speaker markup
-                synthesis_input = texttospeech_v1beta1.SynthesisInput(
+                synthesis_input = texttospeech_v1.SynthesisInput(
                     multi_speaker_markup=multi_speaker_markup
                 )
                 
                 logger.debug("Calling synthesize_speech API")
                 # Set voice parameters
-                voice_params = texttospeech_v1beta1.VoiceSelectionParams(
+                voice_params = texttospeech_v1.VoiceSelectionParams(
                     language_code="en-US",
                     name=model
                 )
                 
                 # Set audio config
-                audio_config = texttospeech_v1beta1.AudioConfig(
-                    audio_encoding=texttospeech_v1beta1.AudioEncoding.MP3,
+                audio_config = texttospeech_v1.AudioConfig(
+                    audio_encoding=texttospeech_v1.AudioEncoding.MP3,
                 )
                 
                 # Generate speech for this chunk

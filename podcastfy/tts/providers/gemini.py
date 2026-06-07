@@ -1,6 +1,6 @@
 """Google Cloud Text-to-Speech provider implementation for single speaker."""
 
-from google.cloud import texttospeech_v1beta1
+from google.cloud import texttospeech_v1
 from typing import List
 from ..base import TTSProvider
 import logging
@@ -20,7 +20,7 @@ class GeminiTTS(TTSProvider):
         """
         self.model = model
         try:
-            self.client = texttospeech_v1beta1.TextToSpeechClient(
+            self.client = texttospeech_v1.TextToSpeechClient(
                 client_options={'api_key': api_key} if api_key else None
             )
         except Exception as e:
@@ -48,21 +48,21 @@ class GeminiTTS(TTSProvider):
         
         try:
             # Create synthesis input
-            synthesis_input = texttospeech_v1beta1.SynthesisInput(
+            synthesis_input = texttospeech_v1.SynthesisInput(
                 text=text
             )
             
             # Parse language code from voice ID (e.g., "en-IN" from "en-IN-Journey-D")
             language_code = "-".join(voice.split("-")[:2])
 
-            voice_params = texttospeech_v1beta1.VoiceSelectionParams(
+            voice_params = texttospeech_v1.VoiceSelectionParams(
                 language_code=language_code,
                 name=voice,
             )
             
             # Set audio config
-            audio_config = texttospeech_v1beta1.AudioConfig(
-                audio_encoding=texttospeech_v1beta1.AudioEncoding.MP3
+            audio_config = texttospeech_v1.AudioConfig(
+                audio_encoding=texttospeech_v1.AudioEncoding.MP3
             )
             
             # Generate speech
