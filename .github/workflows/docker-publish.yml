@@ -6,7 +6,7 @@ on:
     tags: [ 'v*.*.*' ]
     paths:
       - 'podcastfy/**'
-      - 'setup.py'
+      - 'pyproject.toml'
       - 'requirements.txt'
       - 'Dockerfile'
       - 'Dockerfile.dev'
@@ -15,7 +15,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'podcastfy/**'
-      - 'setup.py'
+      - 'pyproject.toml'
       - 'requirements.txt'
       - 'Dockerfile'
       - 'Dockerfile.dev'

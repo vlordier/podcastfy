@@ -6,7 +6,7 @@ on:
       - '**.py'                   # Python files
       - 'tests/**'               # Test directory
       - 'requirements.txt'        # Dependencies
-      - 'setup.py'               # Package setup
+      - 'pyproject.toml'               # Package setup
       - '.github/workflows/**'    # Workflow files
       - 'pyproject.toml'         # Python project config
   pull_request:
@@ -15,7 +15,7 @@ on:
       - '**.py'
       - 'tests/**'
       - 'requirements.txt'
-      - 'setup.py'
+      - 'pyproject.toml'
       - '.github/workflows/**'
       - 'pyproject.toml'
 permissions:
