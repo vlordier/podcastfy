@@ -78,7 +78,6 @@ class LLMBackend:
             model=model_name,
             temperature=temperature,
             max_output_tokens=max_output_tokens,
-            api_key_label=api_key_label,
         )
         self.llm = self.provider.llm
 

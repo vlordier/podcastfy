@@ -1,7 +1,5 @@
 """Gemini LLM provider implementation."""
 
-import os
-
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -11,7 +9,6 @@ from podcastfy.utils.constants import (
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_PRESENCE_PENALTY,
 )
-from podcastfy.utils.enums import ApiKeyLabel
 
 from ..base import LLMProvider
 
@@ -25,7 +22,7 @@ class GeminiLLM(LLMProvider):
             "frequency_penalty": DEFAULT_FREQUENCY_PENALTY,
         }
         self.llm = ChatGoogleGenerativeAI(
-            api_key=api_key or os.environ.get(ApiKeyLabel.GEMINI.value, ""),
+            api_key=api_key,
             model=model,
             max_output_tokens=kwargs.get("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS),
             **common_params,

@@ -45,7 +45,7 @@ class GenerateRequest(BaseModel):
 
 
 async def verify_api_key(x_api_key: str | None = Header(None)):
-    expected_key = os.getenv("PODCASTFY_API_KEY")
+    expected_key = os.getenv(ApiKeyLabel.PODCASTFY.value)
     if expected_key:
         if not x_api_key or x_api_key != expected_key:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or missing API key")

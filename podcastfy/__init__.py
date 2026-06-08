@@ -1,2 +1,5 @@
-# This file can be left empty for now
+from dotenv import load_dotenv
+
+load_dotenv()
+
 __version__ = "0.4.3"

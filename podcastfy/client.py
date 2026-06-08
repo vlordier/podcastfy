@@ -316,16 +316,17 @@ def generate_podcast(
     Returns:
         Optional[str]: Path to the final podcast audio file, or None if only generating a transcript.
     """
+    saved_keys: dict[str, str | None] = {}
     try:
         # Load default config
         app_config = load_app_config_model()
 
-        # Update config if provided
-        if config:
-            if isinstance(config, dict):
-                for key in [e.value for e in ApiKeyLabel]:
-                    if key in config:
-                        os.environ[key] = config[key]
+        # Update config if provided, saving previous values for restoration
+        if config and isinstance(config, dict):
+            for key in [e.value for e in ApiKeyLabel]:
+                if key in config:
+                    saved_keys[key] = os.environ.get(key)
+                    os.environ[key] = config[key]
 
         if not conversation_config:
             conversation_config = load_conversation_config_model()
@@ -390,3 +391,9 @@ def generate_podcast(
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
         raise
+    finally:
+        for key, value in saved_keys.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
