@@ -15,7 +15,6 @@ from ..base import LLMProvider
 
 class GeminiLLM(LLMProvider):
     def __init__(self, api_key: str, model: str, **kwargs):
-        self.model_name = model
         common_params = {
             "temperature": kwargs.get("temperature", 1.0),
             "presence_penalty": DEFAULT_PRESENCE_PENALTY,

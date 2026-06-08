@@ -9,7 +9,6 @@ from ..base import LLMProvider
 
 class LlamafileLLM(LLMProvider):
     def __init__(self, api_key: str = "", model: str = "local", **kwargs):
-        self.model_name = model
         self.llm = Llamafile()
 
     def generate(

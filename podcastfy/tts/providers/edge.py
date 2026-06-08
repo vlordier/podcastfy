@@ -22,7 +22,6 @@ class EdgeTTS(TTSProvider):
             model (str): Model name to use
         """
         self.model = model or EDGE_DEFAULT_MODEL  # Edge TTS doesn't use models, but we set it for consistency
-        self._api_key = api_key  # unused, kept for interface compatibility
 
     def generate_audio(self, text: str, voice: str, model: str, voice2: str | None = None) -> bytes:
         """Generate audio using Edge TTS."""

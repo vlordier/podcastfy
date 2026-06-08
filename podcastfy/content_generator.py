@@ -20,6 +20,7 @@ from langchain_core.runnables import Runnable
 from pydantic import BaseModel, ConfigDict, Field
 
 from podcastfy.llm.factory import LLMProviderFactory, detect_llm_provider
+from podcastfy.tts.base import TTSProvider
 from podcastfy.utils.config import ContentGeneratorConfigModel, load_app_config_model
 from podcastfy.utils.config_conversation import ConversationConfigModel, load_conversation_config_model
 from podcastfy.utils.constants import (
@@ -304,8 +305,6 @@ class ContentCleanerMixin:
         if additional_tags is None:
             additional_tags = [SpeakerTag.PERSON1, SpeakerTag.PERSON2]
         try:
-            from podcastfy.tts.base import TTSProvider
-
             input_text = ContentCleanerMixin._clean_scratchpad(input_text)
             supported_tags = [*COMMON_SSML_TAGS.copy(), "speak"]
             tts_provider = TTSProvider.__new__(TTSProvider)

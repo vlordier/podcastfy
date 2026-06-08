@@ -55,11 +55,16 @@ async def verify_api_key(x_api_key: str | None = Header(None)):
 app = FastAPI()
 
 TEMP_DIR = os.path.join(os.path.dirname(__file__), TEMP_DIR_NAME)
-os.makedirs(TEMP_DIR, exist_ok=True)
+
+
+def _ensure_temp_dir() -> str:
+    os.makedirs(TEMP_DIR, exist_ok=True)
+    return TEMP_DIR
 
 
 @app.on_event("startup")
 def cleanup_temp_files():
+    _ensure_temp_dir()
     now = time.time()
     for f in os.listdir(TEMP_DIR):
         fp = os.path.join(TEMP_DIR, f)

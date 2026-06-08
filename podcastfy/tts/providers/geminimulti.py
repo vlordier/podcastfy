@@ -187,13 +187,13 @@ class GeminiMultiTTS(TTSProvider):
                             logger.debug(f"Successfully processed chunk {i}")
                         else:
                             logger.warning(f"Zero-length segment in chunk {i}")
-                    except Exception:
+                    except (ValueError, RuntimeError, OSError):
                         logger.exception(f"Error processing chunk {i}")
                     try:
                         os.remove(temp_file)
-                    except Exception:
+                    except OSError:
                         logger.exception(f"Failed to remove temp file {temp_file}")
-                except Exception:
+                except (ValueError, RuntimeError, OSError):
                     logger.exception(f"Error handling chunk {i}")
                     continue
 

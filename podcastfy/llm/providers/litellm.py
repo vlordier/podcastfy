@@ -9,7 +9,6 @@ from ..base import LLMProvider
 
 class LiteLLM(LLMProvider):
     def __init__(self, api_key: str, model: str, **kwargs):
-        self.model_name = model
         self.llm = ChatLiteLLM(
             model=model,
             temperature=kwargs.get("temperature", 1.0),
