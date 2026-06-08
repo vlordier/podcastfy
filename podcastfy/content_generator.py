@@ -15,7 +15,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain import hub
 from podcastfy.utils.config_conversation import load_conversation_config_model
-from podcastfy.utils.config import load_config
+from podcastfy.utils.config import load_app_config_model
 from podcastfy.llm.factory import LLMProviderFactory, detect_llm_provider
 import logging
 from langchain.prompts import HumanMessagePromptTemplate
@@ -616,8 +616,8 @@ class ContentGenerator:
                 conversation_config (Optional[Dict[str, Any]]): Custom conversation configuration.
         """
         #os.environ["GOOGLE_API_KEY"] = api_key
-        self.config = load_config()
-        self.content_generator_config = self.config.get("content_generator", {})
+        self.app_config = load_app_config_model()
+        self.content_generator_config = self.app_config.content_generator
 
         self.config_conversation = load_conversation_config_model(conversation_config)
 
@@ -631,16 +631,14 @@ class ContentGenerator:
 
                 # Initialize LLM backend
         if not model_name:
-            model_name = self.content_generator_config.get("llm_model")
+            model_name = self.app_config.content_generator.llm_model
         if is_local:
             model_name = "User provided local model"
 
         llm_backend = LLMBackend(
             is_local=is_local,
             temperature=self.config_conversation.creativity,
-            max_output_tokens=self.content_generator_config.get(
-                "max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS
-            ),
+            max_output_tokens=self.app_config.content_generator.max_output_tokens,
             model_name=model_name,
             api_key_label=api_key_label,
         )
@@ -662,16 +660,16 @@ class ContentGenerator:
         """
         Compose the prompt for the LLM based on the content list.
         """
-        content_generator_config = self.config.get("content_generator", {})
+        cg = self.app_config.content_generator
         
         # Get base template and commit values
-        base_template = content_generator_config.get("prompt_template")
-        base_commit = content_generator_config.get("prompt_commit")
+        base_template = cg.prompt_template
+        base_commit = cg.prompt_commit
         
         # Modify template and commit for longform if configured
         if longform:
-            template = content_generator_config.get("longform_prompt_template")
-            commit = content_generator_config.get("longform_prompt_commit")
+            template = cg.longform_prompt_template
+            commit = cg.longform_prompt_commit
         else:
             template = base_template
             commit = base_commit

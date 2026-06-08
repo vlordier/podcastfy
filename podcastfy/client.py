@@ -9,30 +9,17 @@ generation, and text-to-speech conversion processes.
 import os
 import uuid
 import typer
-import yaml
 from podcastfy.content_parser.content_extractor import ContentExtractor
 from podcastfy.content_generator import ContentGenerator
 from podcastfy.text_to_speech import TextToSpeech
-from podcastfy.utils.config import Config, load_config
-from podcastfy.utils.config_conversation import load_conversation_config
+from podcastfy.utils.config import load_app_config_model, AppConfigModel
+from podcastfy.utils.config_conversation import load_conversation_config_model
 from podcastfy.utils.logger import setup_logger
 from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
 from podcastfy.utils.constants import DEFAULT_TRANSCRIPTS_DIR, DEFAULT_AUDIO_DIR
 from typing import List, Optional, Dict, Any
-import copy
 
 import logging
-
-# Configure logging to show all levels and write to both file and console
-""" logging.basicConfig(
-    level=logging.DEBUG,  # Show all levels of logs
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('podcastfy.log'),  # Save to file
-        logging.StreamHandler()  # Print to console
-    ]
-) """
-
 
 logger = setup_logger(__name__)
 
@@ -61,17 +48,33 @@ def process_content(
     """
     try:
         if config is None:
-            config = load_config()
+            app_config = load_app_config_model()
 
         # Load default conversation config
-        conv_config = load_conversation_config()
+        conv_config = load_conversation_config_model()
 
         # Update with provided config if any
         if conversation_config:
-            conv_config.configure(conversation_config)
+            known_fields = {}
+            for k, v in conversation_config.items():
+                if k in type(conv_config).model_fields and k != "text_to_speech":
+                    known_fields[k] = v
+            # Also extract known top-level fields from nested text_to_speech (old structure)
+            tts = conversation_config.get("text_to_speech", {})
+            if isinstance(tts, dict):
+                for nested_key in ("output_directories", "temp_audio_dir", "ending_message", "audio_format", "default_tts_model"):
+                    if nested_key in tts and nested_key not in known_fields:
+                        known_fields[nested_key] = tts[nested_key]
+            if known_fields:
+                # Convert nested dict to OutputDirectories if needed
+                od = known_fields.get("output_directories")
+                if od is not None and isinstance(od, dict):
+                    from podcastfy.utils.config_conversation import OutputDirectories as OD
+                    known_fields["output_directories"] = OD(**od)
+                conv_config = conv_config.model_copy(update=known_fields)
         # Get output directories from conversation config
-        tts_config = conv_config.get("text_to_speech", {})
-        output_directories = tts_config.get("output_directories", {})
+        tts_config = conv_config.text_to_speech
+        output_directories = conv_config.output_directories
 
         if transcript_file:
             logger.info(f"Using transcript file: {transcript_file}")
@@ -87,7 +90,7 @@ def process_content(
                 is_local=is_local,
                 model_name=model_name,
                 api_key_label=api_key_label,
-                conversation_config=conv_config.to_dict()
+                conversation_config=conv_config.model_dump()
             )
 
             combined_content = ""
@@ -111,8 +114,9 @@ def process_content(
 
             # Generate Q&A content using output directory from conversation config
             random_filename = f"transcript_{uuid.uuid4().hex}.txt"
+            transcripts_dir = output_directories.transcripts or DEFAULT_TRANSCRIPTS_DIR if output_directories else DEFAULT_TRANSCRIPTS_DIR
             transcript_filepath = os.path.join(
-                output_directories.get("transcripts", DEFAULT_TRANSCRIPTS_DIR),
+                transcripts_dir,
                 random_filename,
             )
             qa_content = content_generator.generate_qa_content(
@@ -131,17 +135,18 @@ def process_content(
                     TTSProvider.GEMINI: ApiKeyLabel.GEMINI,
                     TTSProvider.GEMINI_MULTI: ApiKeyLabel.GEMINI,
                 }.get(TTSProvider(tts_model))
-                api_key = getattr(config, api_key_label.value, "") if api_key_label else ""
+                api_key = os.environ.get(api_key_label.value, "") if api_key_label else ""
 
             text_to_speech = TextToSpeech(
                 model=tts_model,
                 api_key=api_key,
-                conversation_config=conv_config.to_dict(),
+                conversation_config=conv_config.model_dump(),
             )
 
             random_filename = f"podcast_{uuid.uuid4().hex}.mp3"
+            audio_dir = output_directories.audio or DEFAULT_AUDIO_DIR if output_directories else DEFAULT_AUDIO_DIR
             audio_file = os.path.join(
-                output_directories.get("audio", DEFAULT_AUDIO_DIR), random_filename
+                audio_dir, random_filename
             )
             text_to_speech.convert_to_speech(qa_content, audio_file)
             logger.info(f"Podcast generated successfully using {tts_model} TTS model")
@@ -211,8 +216,8 @@ def main(
     Generate a podcast or transcript from a list of URLs, a file containing URLs, a transcript file, image files, or raw text.
     """
     try:
-        config = load_config()
-        main_config = config.get("main", {})
+        app_config = load_app_config_model()
+        main_config = app_config.main or {}
 
         conversation_config = None
         # Load conversation config if provided
@@ -222,8 +227,10 @@ def main(
 
         # Use default TTS model from conversation config if not specified
         if tts_model is None:
-            tts_config = load_conversation_config().get("text_to_speech", {})
-            tts_model = tts_config.get("default_tts_model", TTSProvider.OPENAI.value)
+            default_conv = load_conversation_config_model()
+            tts_model = default_conv.default_tts_model
+            if isinstance(tts_model, TTSProvider):
+                tts_model = tts_model.value
 
         if transcript:
             if image_paths:
@@ -233,7 +240,7 @@ def main(
                 tts_model=tts_model,
                 generate_audio=not transcript_only,
                 conversation_config=conversation_config,
-                config=config,
+                config=main_config,
                 is_local=is_local,
                 text=text,
                 model_name=llm_model_name,
@@ -255,7 +262,7 @@ def main(
                 urls=urls_list,
                 tts_model=tts_model,
                 generate_audio=not transcript_only,
-                config=config,
+                config=main_config,
                 conversation_config=conversation_config,
                 image_paths=image_paths,
                 is_local=is_local,
@@ -322,32 +329,24 @@ def generate_podcast(
     try:
         print("Generating podcast...")
         # Load default config
-        default_config = load_config()
+        app_config = load_app_config_model()
 
         # Update config if provided
         if config:
             if isinstance(config, dict):
-                # Create a deep copy of the default config
-                updated_config = copy.deepcopy(default_config)
-                # Update the copy with user-provided values
-                updated_config.configure(**config)
-                default_config = updated_config
-            elif isinstance(config, Config):
-                # If it's already a Config object, use it directly
-                default_config = config
-            else:
-                raise ValueError(
-                    "Config must be either a dictionary or a Config object"
-                )
+                for key in [e.value for e in ApiKeyLabel]:
+                    if key in config:
+                        os.environ[key] = config[key]
 
         if not conversation_config:
-            conversation_config = load_conversation_config().to_dict()
+            conversation_config = load_conversation_config_model().model_dump()
 
-        main_config = default_config.config.get("main", {})
+        main_config = app_config.main or {}
 
         # Use provided tts_model if specified, otherwise use the one from config
         if tts_model is None:
-            tts_model = conversation_config.get("default_tts_model", TTSProvider.OPENAI.value)
+            tts_model_value = conversation_config.get("default_tts_model", TTSProvider.OPENAI.value)
+            tts_model = tts_model_value.value if isinstance(tts_model_value, TTSProvider) else tts_model_value
 
         if transcript_file:
             if image_paths:
@@ -356,7 +355,7 @@ def generate_podcast(
                 transcript_file=transcript_file,
                 tts_model=tts_model,
                 generate_audio=not transcript_only,
-                config=default_config,
+                config=app_config,
                 conversation_config=conversation_config,
                 is_local=is_local,
                 text=text,
@@ -381,7 +380,7 @@ def generate_podcast(
                 urls=urls_list,
                 tts_model=tts_model,
                 generate_audio=not transcript_only,
-                config=default_config,
+                config=app_config,
                 conversation_config=conversation_config,
                 image_paths=image_paths,
                 is_local=is_local,

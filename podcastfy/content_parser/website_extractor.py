@@ -9,9 +9,10 @@ import requests
 import re
 import html
 import logging
+import yaml
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from podcastfy.utils.config import load_config
+from podcastfy.utils.config import get_config_path
 from podcastfy.content_parser.pdf_extractor import PDFExtractor
 from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
 from .extractor_base import ContentExtractor as ContentExtractorABC
@@ -41,8 +42,12 @@ class WebsiteExtractor(ContentExtractorABC):
 		"""
 		Initialize the WebsiteExtractor.
 		"""
-		self.config = load_config()
-		self.website_extractor_config = self.config.get('website_extractor', {})
+		config_path = get_config_path()
+		raw_config = {}
+		if config_path:
+			with open(config_path, 'r') as f:
+				raw_config = yaml.safe_load(f)
+		self.website_extractor_config = raw_config.get('website_extractor', {})
 		self.unwanted_tags = self.website_extractor_config.get('unwanted_tags', [])
 		self.user_agent = self.website_extractor_config.get('user_agent', 'Mozilla/5.0')
 		self.timeout = self.website_extractor_config.get('timeout', DEFAULT_TIMEOUT_SECONDS)

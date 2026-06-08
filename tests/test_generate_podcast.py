@@ -1,9 +1,10 @@
 import os
 import pytest
 import tempfile
+import yaml
 from podcastfy.client import generate_podcast
-from podcastfy.utils.config import load_config
-from podcastfy.utils.config_conversation import load_conversation_config
+from podcastfy.utils.config import get_config_path
+from podcastfy.utils.config_conversation import load_conversation_config_model
 
 
 TEST_URL = "https://en.wikipedia.org/wiki/Friends"
@@ -15,13 +16,12 @@ MOCK_IMAGE_PATHS = [
 
 @pytest.fixture
 def sample_config():
-    config = load_config()
-    return config
+    return {}
 
 
 @pytest.fixture
 def default_conversation_config():
-    config = load_conversation_config()
+    config = load_conversation_config_model()
     return config
 
 
@@ -88,9 +88,7 @@ def test_generate_podcast_from_urls_11labs(default_conversation_config):
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
-    assert os.path.dirname(audio_file) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("audio")
+    assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
 @pytest.mark.skip(reason="Testing edge only on Github Action as it's free")
@@ -107,9 +105,7 @@ def test_generate_podcast_from_urls_openai(default_conversation_config):
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
-    assert os.path.dirname(audio_file) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("audio")
+    assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
 @pytest.mark.skip(reason="Testing edge only on Github Action as it's free")
@@ -126,9 +122,7 @@ def test_generate_podcast_from_urls_gemini(default_conversation_config):
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
-    assert os.path.dirname(audio_file) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("audio")
+    assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
 def test_generate_podcast_from_urls_edge(default_conversation_config):
@@ -141,9 +135,7 @@ def test_generate_podcast_from_urls_edge(default_conversation_config):
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
-    assert os.path.dirname(audio_file) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("audio")
+    assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
 def test_generate_transcript_only(default_conversation_config):
@@ -156,9 +148,7 @@ def test_generate_transcript_only(default_conversation_config):
     assert result is not None
     assert os.path.exists(result)
     assert result.endswith(".txt")
-    assert os.path.dirname(result) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("transcripts")
+    assert os.path.dirname(result) == default_conversation_config.output_directories.transcripts
 
 
 def test_generate_podcast_from_transcript_file(sample_conversation_config):
@@ -267,11 +257,7 @@ def test_generate_podcast_from_images(sample_config, default_conversation_config
     assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
 
     # Check if a transcript was generated
-    transcript_dir = (
-        default_conversation_config.get("text_to_speech", {})
-        .get("output_directories", {})
-        .get("transcripts")
-    )
+    transcript_dir = default_conversation_config.output_directories.transcripts
     transcript_files = [
         f
         for f in os.listdir(transcript_dir)
@@ -290,9 +276,7 @@ def test_generate_podcast_from_raw_text(sample_config, default_conversation_conf
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
-    assert os.path.dirname(audio_file) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("audio")
+    assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
 def test_generate_transcript_with_user_instructions(
@@ -334,9 +318,7 @@ def test_generate_transcript_with_user_instructions(
     assert result is not None
     assert os.path.exists(result)
     assert result.endswith(".txt")
-    assert os.path.dirname(result) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("transcripts")
+    assert os.path.dirname(result) == default_conversation_config.output_directories.transcripts
 
     # Read the generated transcript
     with open(result, "r") as f:
@@ -366,9 +348,7 @@ def test_generate_podcast_with_custom_llm(sample_config, default_conversation_co
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > 1024
-    assert os.path.dirname(audio_file) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("audio")
+    assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
 def test_generate_transcript_only_with_custom_llm(
@@ -389,9 +369,7 @@ def test_generate_transcript_only_with_custom_llm(
     assert result is not None
     assert os.path.exists(result)
     assert result.endswith(".txt")
-    assert os.path.dirname(result) == default_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("transcripts")
+    assert os.path.dirname(result) == default_conversation_config.output_directories.transcripts
 
     # Read and verify the content
     with open(result, "r") as f:

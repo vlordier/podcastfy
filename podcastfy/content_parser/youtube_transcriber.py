@@ -8,7 +8,8 @@ to clean and format the extracted text.
 
 from youtube_transcript_api import YouTubeTranscriptApi
 import logging
-from podcastfy.utils.config import load_config
+import yaml
+from podcastfy.utils.config import get_config_path
 
 from .extractor_base import ContentExtractor as ContentExtractorABC
 
@@ -25,8 +26,12 @@ class YouTubeTranscriber(ContentExtractorABC):
 		return self.extract_transcript(source)
 
 	def __init__(self):
-		self.config = load_config()
-		self.youtube_transcriber_config = self.config.get('youtube_transcriber')
+		config_path = get_config_path()
+		raw_config = {}
+		if config_path:
+			with open(config_path, 'r') as f:
+				raw_config = yaml.safe_load(f)
+		self.youtube_transcriber_config = raw_config.get('youtube_transcriber')
 
 	def extract_transcript(self, url: str) -> str:
 		"""

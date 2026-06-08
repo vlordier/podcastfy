@@ -3,8 +3,6 @@ from unittest.mock import patch, MagicMock
 import tempfile
 import os
 from podcastfy.content_generator import ContentGenerator
-from podcastfy.utils.config import Config
-from podcastfy.utils.config_conversation import ConversationConfig
 from podcastfy.content_parser.pdf_extractor import PDFExtractor
 from podcastfy.content_parser.content_extractor import ContentExtractor
 
@@ -35,9 +33,8 @@ class TestGenAIPodcast(unittest.TestCase):
         """
         Set up the test environment.
         """
-        config = Config()
-        self.api_key = config.GEMINI_API_KEY
-        self.config = config
+        self.api_key = os.environ.get("GEMINI_API_KEY", "")
+        self.config = None
 
     def test_generate_qa_content(self):
         """

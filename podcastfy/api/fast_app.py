@@ -6,54 +6,36 @@ with configuration management and temporary file handling.
 """
 
 from fastapi import FastAPI, HTTPException, Depends, Header, status
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 import os
 import shutil
-import yaml
 import re
 import time
 import logging
-from typing import Dict, Any, Optional, List
-from pathlib import Path
+from typing import Optional, List
 from pydantic import BaseModel, Field
 from ..client import generate_podcast
 import uvicorn
 
 from podcastfy.utils.constants import MAX_URLS, TEMP_FILE_MAX_AGE_SECONDS, DEFAULT_PORT, TEMP_DIR_NAME
 from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
+from podcastfy.utils.config_conversation import ConversationConfigModel, load_conversation_config_model
 
 
 logger = logging.getLogger(__name__)
 
 
-def load_base_config() -> Dict[str, Any]:
-    config_path = Path(__file__).parent / "podcastfy" / "conversation_config.yaml"
+def load_base_config_model() -> ConversationConfigModel:
     try:
-        with open(config_path, 'r') as file:
-            return yaml.safe_load(file)
+        return load_conversation_config_model()
     except Exception as e:
         print(f"Warning: Could not load base config: {e}")
-        return {}
+        return ConversationConfigModel()
 
-def merge_configs(base_config: Dict[str, Any], user_config: Dict[str, Any]) -> Dict[str, Any]:
-    """Merge user configuration with base configuration, preferring user values."""
-    merged = base_config.copy()
-    
-    # Handle special cases for nested dictionaries
-    if 'text_to_speech' in merged and 'text_to_speech' in user_config:
-        merged['text_to_speech'].update(user_config.get('text_to_speech', {}))
-    
-    # Update top-level keys
-    for key, value in user_config.items():
-        if key != 'text_to_speech':  # Skip text_to_speech as it's handled above
-            if value is not None:  # Only update if value is not None
-                merged[key] = value
-                
-    return merged
 
 class GenerateRequest(BaseModel):
     urls: List[str] = Field(default_factory=list, max_length=MAX_URLS)
-    tts_model: Optional[str] = Field(default=None, pattern=r"^(openai|elevenlabs|edge|gemini|geminimulti)?$")  # Values from TTSProvider enum
+    tts_model: Optional[str] = Field(default=None, pattern=r"^(openai|elevenlabs|edge|gemini|geminimulti)?$")
     user_instructions: Optional[str] = None
     creativity: Optional[float] = Field(default=None, ge=0, le=2)
     openai_key: Optional[str] = None
@@ -92,48 +74,38 @@ for f in os.listdir(TEMP_DIR):
 
 @app.post("/generate")
 def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_api_key)):
-    """"""
     try:
         # Set environment variables
-        os.environ[ApiKeyLabel.OPENAI.value] = data.openai_key
-        os.environ[ApiKeyLabel.GEMINI.value] = data.google_key
-        os.environ[ApiKeyLabel.ELEVENLABS.value] = data.elevenlabs_key
+        if data.openai_key:
+            os.environ[ApiKeyLabel.OPENAI.value] = data.openai_key
+        if data.google_key:
+            os.environ[ApiKeyLabel.GEMINI.value] = data.google_key
+        if data.elevenlabs_key:
+            os.environ[ApiKeyLabel.ELEVENLABS.value] = data.elevenlabs_key
 
-        # Load base configuration
-        base_config = load_base_config()
-        
-        # Get TTS model and its configuration from base config
-        tts_model = data.tts_model or base_config.get('text_to_speech', {}).get('default_tts_model', TTSProvider.OPENAI.value)
-        tts_base_config = base_config.get('text_to_speech', {}).get(tts_model, {})
-        
-        # Get voices (use user-provided voices or fall back to defaults)
-        voices = data.voices if hasattr(data, 'voices') else {}
-        default_voices = tts_base_config.get('default_voices', {})
-        
-        # Prepare user configuration
-        user_config = {
-            'creativity': float(data.creativity if data.creativity is not None else base_config.get('creativity', 0.7)),
-            'conversation_style': base_config.get('conversation_style', []),
-            'roles_person1': base_config.get('roles_person1'),
-            'roles_person2': base_config.get('roles_person2'),
-            'dialogue_structure': base_config.get('dialogue_structure', []),
-            'podcast_name': base_config.get('podcast_name'),
-            'podcast_tagline': base_config.get('podcast_tagline'),
-            'output_language': base_config.get('output_language', 'English'),
-            'user_instructions': data.user_instructions if data.user_instructions is not None else base_config.get('user_instructions', ''),
-            'engagement_techniques': base_config.get('engagement_techniques', []),
-            'text_to_speech': {
-                'default_tts_model': tts_model,
-                'model': tts_base_config.get('model'),
-                'default_voices': {
-                    'question': voices.get('question', default_voices.get('question')),
-                    'answer': voices.get('answer', default_voices.get('answer'))
-                }
-            }
-        }
+        # Load base conversation config
+        if data.conversation_config:
+            base_model = ConversationConfigModel(**data.conversation_config)
+        else:
+            base_model = load_base_config_model()
 
-        # Merge configurations
-        conversation_config = merge_configs(base_config, user_config)
+        # Build override dict from request fields
+        update_dict = {}
+        if data.creativity is not None:
+            update_dict['creativity'] = data.creativity
+        if data.user_instructions is not None:
+            update_dict['user_instructions'] = data.user_instructions
+        if data.tts_model is not None:
+            update_dict['default_tts_model'] = data.tts_model
+
+        # Apply overrides using Pydantic's model_copy
+        conversation_config_model = base_model.model_copy(update=update_dict)
+
+        # Determine TTS model for direct argument
+        tts_model = data.tts_model or conversation_config_model.default_tts_model
+
+        # Convert to dict for downstream compatibility
+        conversation_config = conversation_config_model.model_dump()
 
         # Generate podcast
         result = generate_podcast(

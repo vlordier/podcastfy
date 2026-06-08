@@ -1,5 +1,4 @@
 import unittest
-from podcastfy.utils.config import load_config
 from podcastfy.content_parser.content_extractor import ContentExtractor
 from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
 from podcastfy.content_parser.website_extractor import WebsiteExtractor
@@ -41,7 +40,6 @@ class TestContentParser(unittest.TestCase):
         # pass #TODO remove pass when testing. Keeping it here to avoid running out of quota.
 
         # Initialize WebsiteExtractor
-        config = load_config()
         extractor = WebsiteExtractor()
 
         # Test URL

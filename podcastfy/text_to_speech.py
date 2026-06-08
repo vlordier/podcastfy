@@ -15,7 +15,6 @@ from typing import List, Tuple, Optional, Dict, Any
 from pydub import AudioSegment
 
 from .tts.factory import TTSProviderFactory
-from .utils.config import load_config
 from .utils.config_conversation import load_conversation_config_model, TTSProviderConfig
 from .tts.base import QAPair
 from podcastfy.utils.constants import (
@@ -45,13 +44,13 @@ class TextToSpeech:
                         api_key (Optional[str]): API key for the selected text-to-speech service.
                         conversation_config (Optional[Dict]): Configuration for conversation settings.
         """
-        self.config = load_config()
         self.conversation_config = load_conversation_config_model(conversation_config)
         self.tts_config = self.conversation_config.text_to_speech
 
         # Get API key from config if not provided
         if not api_key:
-            api_key = getattr(self.config, f"{model.upper().replace('MULTI', '')}_API_KEY", None)
+            api_key_label = f"{model.upper().replace('MULTI', '')}_API_KEY"
+            api_key = os.environ.get(api_key_label, None)
 
         # Initialize provider using factory
         self.provider = TTSProviderFactory.create(
@@ -286,9 +285,6 @@ def main(seed: int = 42) -> None:
             seed (int): Random seed for reproducibility. Defaults to 42.
     """
     try:
-        # Load configuration
-        config = load_config()
-
         # Override default TTS model to use edge for tests
         test_config = {"text_to_speech": {"default_tts_model": "edge"}}
 
