@@ -1,11 +1,13 @@
 """Factory for creating LLM providers."""
 
-from typing import ClassVar, Type
+from typing import ClassVar
+
+from podcastfy.utils.enums import LLMProvider as LLMProviderEnum
+
 from .base import LLMProvider
 from .providers.gemini import GeminiLLM
 from .providers.litellm import LiteLLM
 from .providers.llamafile import LlamafileLLM
-from podcastfy.utils.enums import LLMProvider as LLMProviderEnum
 
 
 def detect_llm_provider(model_name: str) -> LLMProviderEnum:
@@ -18,7 +20,7 @@ def detect_llm_provider(model_name: str) -> LLMProviderEnum:
 
 
 class LLMProviderFactory:
-    _providers: ClassVar[dict[LLMProviderEnum, Type[LLMProvider]]] = {
+    _providers: ClassVar[dict[LLMProviderEnum, type[LLMProvider]]] = {
         LLMProviderEnum.GEMINI: GeminiLLM,
         LLMProviderEnum.LITELLM: LiteLLM,
         LLMProviderEnum.LLAMAFILE: LlamafileLLM,
@@ -28,12 +30,10 @@ class LLMProviderFactory:
     def create(cls, name: LLMProviderEnum, api_key: str, model: str, **kwargs) -> LLMProvider:
         provider_cls = cls._providers.get(name)
         if not provider_cls:
-            raise ValueError(
-                f"Unknown LLM provider: {name}. "
-                f"Choose from: {', '.join(p.name for p in cls._providers)}"
-            )
+            msg = f"Unknown LLM provider: {name}. Choose from: {', '.join(p.name for p in cls._providers)}"
+            raise ValueError(msg)
         return provider_cls(api_key=api_key, model=model, **kwargs)
 
     @classmethod
-    def register(cls, name: LLMProviderEnum, provider_cls: Type[LLMProvider]) -> None:
+    def register(cls, name: LLMProviderEnum, provider_cls: type[LLMProvider]) -> None:
         cls._providers[name] = provider_cls

@@ -1,14 +1,15 @@
 """Factory for creating content extractors."""
 
-from typing import ClassVar, Type
+from typing import ClassVar
+
 from .extractor_base import ContentExtractor
 
 
 class ExtractorFactory:
-    _extractors: ClassVar[list[Type[ContentExtractor]]] = []
+    _extractors: ClassVar[list[type[ContentExtractor]]] = []
 
     @classmethod
-    def register(cls, extractor_cls: Type[ContentExtractor]) -> None:
+    def register(cls, extractor_cls: type[ContentExtractor]) -> None:
         cls._extractors.append(extractor_cls)
 
     @classmethod

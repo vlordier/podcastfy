@@ -1,11 +1,14 @@
 """LiteLLM provider implementation."""
 
 import os
+
 from langchain_community.chat_models import ChatLiteLLM
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from ..base import LLMProvider
+from langchain_core.prompts import ChatPromptTemplate
+
 from podcastfy.utils.enums import ApiKeyLabel
+
+from ..base import LLMProvider
 
 
 class LiteLLM(LLMProvider):
@@ -23,8 +26,10 @@ class LiteLLM(LLMProvider):
         images: list[str] | None = None,
         config_conversation: dict | None = None,
     ) -> str:
-        prompt_template = ChatPromptTemplate.from_messages([
-            ("human", prompt),
-        ])
+        prompt_template = ChatPromptTemplate.from_messages(
+            [
+                ("human", prompt),
+            ]
+        )
         chain = prompt_template | self.llm | StrOutputParser()
         return chain.invoke({})

@@ -1,126 +1,128 @@
 """Google Cloud Text-to-Speech provider implementation."""
 
-from google.cloud import texttospeech_v1
-from typing import ClassVar
-from ..base import TTSProvider
-import re
 import logging
 import os
+import re
 import tempfile
 from io import BytesIO
+from typing import ClassVar
+
+from google.cloud import texttospeech_v1
 from pydub import AudioSegment
+
 from podcastfy.utils.constants import (
+    COMMON_SSML_TAGS,
+    DEFAULT_BITRATE,
     DEFAULT_CHUNK_BYTES,
+    DEFAULT_CODEC,
     DEFAULT_TURN_CHARS,
+    GEMINI_MULTI_LANGUAGE,
     GEMINI_MULTI_TTS_MODEL,
     GEMINI_MULTI_VOICE1,
     GEMINI_MULTI_VOICE2,
-    GEMINI_MULTI_LANGUAGE,
-    DEFAULT_BITRATE,
-    DEFAULT_CODEC,
-    COMMON_SSML_TAGS,
 )
+
+from ..base import TTSProvider
 
 logger = logging.getLogger(__name__)
 
+
 class GeminiMultiTTS(TTSProvider):
     """Google Cloud Text-to-Speech provider with multi-speaker support."""
-    
+
     multi_speaker: ClassVar[bool] = True
-    
-    def __init__(self, api_key: str = None, model: str = GEMINI_MULTI_TTS_MODEL) -> None:
+
+    def __init__(self, api_key: str | None = None, model: str = GEMINI_MULTI_TTS_MODEL) -> None:
         """
         Initialize Google Cloud TTS provider.
-        
+
         Args:
             api_key (str): Google Cloud API key
         """
         self.model = model
         try:
-            self.client = texttospeech_v1.TextToSpeechClient(
-                client_options={'api_key': api_key} if api_key else None
-            )
+            self.client = texttospeech_v1.TextToSpeechClient(client_options={"api_key": api_key} if api_key else None)
             logger.info("Successfully initialized GeminiMultiTTS client")
         except Exception as e:
             logger.error(f"Failed to initialize GeminiMultiTTS client: {str(e)}")
             raise
-            
+
     def chunk_text(self, text: str, max_bytes: int = DEFAULT_CHUNK_BYTES) -> list[str]:
         """
         Split text into chunks that fit within Google TTS byte limit while preserving speaker tags.
-        
+
         Args:
             text (str): Input text with Person1/Person2 tags
             max_bytes (int): Maximum bytes per chunk
-            
+
         Returns:
             List[str]: List of text chunks with proper speaker tags preserved
         """
         logger.debug(f"Starting chunk_text with text length: {len(text)} bytes")
-        
+
         # Split text into tagged sections, preserving both Person1 and Person2 tags
-        pattern = r'(<Person[12]>.*?</Person[12]>)'
+        pattern = r"(<Person[12]>.*?</Person[12]>)"
         sections = re.split(pattern, text, flags=re.DOTALL)
         sections = [s.strip() for s in sections if s.strip()]
         logger.debug(f"Split text into {len(sections)} sections")
-        
+
         chunks = []
         current_chunk = ""
-        
+
         for section in sections:
             # Extract speaker tag and content if this is a tagged section
-            tag_match = re.match(r'<(Person[12])>(.*?)</Person[12]>', section, flags=re.DOTALL)
-            
+            tag_match = re.match(r"<(Person[12])>(.*?)</Person[12]>", section, flags=re.DOTALL)
+
             if tag_match:
                 speaker_tag = tag_match.group(1)  # Will be either Person1 or Person2
                 content = tag_match.group(2).strip()
-                
+
                 # Test if adding this entire section would exceed limit
                 test_chunk = current_chunk
                 if current_chunk:
                     test_chunk += f"<{speaker_tag}>{content}</{speaker_tag}>"
                 else:
                     test_chunk = f"<{speaker_tag}>{content}</{speaker_tag}>"
-                    
-                if len(test_chunk.encode('utf-8')) > max_bytes and current_chunk:
+
+                if len(test_chunk.encode("utf-8")) > max_bytes and current_chunk:
                     # Store current chunk and start new one
                     chunks.append(current_chunk)
                     current_chunk = f"<{speaker_tag}>{content}</{speaker_tag}>"
                 else:
                     # Add to current chunk
                     current_chunk = test_chunk
-        
+
         # Add final chunk if it exists
         if current_chunk:
             chunks.append(current_chunk)
-            
+
         logger.info(f"Created {len(chunks)} chunks from input text")
         return chunks
 
     def split_turn_text(self, text: str, max_chars: int = DEFAULT_TURN_CHARS) -> list[str]:
         """
         Split turn text into smaller chunks at sentence boundaries.
-        
+
         Args:
             text (str): Text content of a single turn
             max_chars (int): Maximum characters per chunk
-            
+
         Returns:
             List[str]: List of text chunks
         """
         if len(text) <= max_chars:
             return [text]
-        
+
         chunks = []
-        sentences = re.split(r'([.!?]+(?:\s+|$))', text)
+        sentences = re.split(r"([.!?]+(?:\s+|$))", text)
         sentences = [s for s in sentences if s]
-        
+
         current_chunk = ""
         for i in range(0, len(sentences), 2):
             sentence = sentences[i]
             separator = sentences[i + 1] if i + 1 < len(sentences) else ""
             complete_sentence = sentence + separator
-            
+
             if len(current_chunk) + len(complete_sentence) > max_chars:
                 if current_chunk:
                     chunks.append(current_chunk.strip())
@@ -138,45 +140,45 @@ class GeminiMultiTTS(TTSProvider):
                     current_chunk = temp_chunk
             else:
                 current_chunk += complete_sentence
-                
+
         if current_chunk:
             chunks.append(current_chunk.strip())
-            
+
         return chunks
 
     def merge_audio(self, audio_chunks: list[bytes]) -> bytes:
         """
         Merge multiple MP3 audio chunks into a single audio file.
-        
+
         Args:
             audio_chunks (List[bytes]): List of MP3 audio data
-            
+
         Returns:
             bytes: Combined MP3 audio data
         """
         if not audio_chunks:
             return b""
-        
+
         if len(audio_chunks) == 1:
             return audio_chunks[0]
-        
+
         try:
             # Initialize combined audio with first chunk
             combined = None
             valid_chunks = []
-            
+
             for i, chunk in enumerate(audio_chunks):
                 try:
                     # Ensure chunk is not empty
                     if not chunk or len(chunk) == 0:
                         logger.warning(f"Skipping empty chunk {i}")
                         continue
-                    
+
                     # Save chunk to temporary file for ffmpeg to process
                     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
                         temp_file = f.name
                         f.write(chunk)
-                    
+
                     # Create audio segment from temp file
                     try:
                         segment = AudioSegment.from_file(temp_file, format="mp3")
@@ -185,51 +187,52 @@ class GeminiMultiTTS(TTSProvider):
                             logger.debug(f"Successfully processed chunk {i}")
                         else:
                             logger.warning(f"Zero-length segment in chunk {i}")
-                    except Exception as e:
-                        logger.exception(f"Error processing chunk {i}: {str(e)}")
-                    
-                    # Clean up temp file
+                    except Exception:
+                        logger.exception(f"Error processing chunk {i}")
                     try:
                         os.remove(temp_file)
-                    except Exception as e:
-                        logger.exception(f"Failed to remove temp file {temp_file}: {str(e)}")
-                    
-                except Exception as e:
-                    logger.exception(f"Error handling chunk {i}: {str(e)}")
+                    except Exception:
+                        logger.exception(f"Failed to remove temp file {temp_file}")
+                except Exception:
+                    logger.exception(f"Error handling chunk {i}")
                     continue
-            
+
             if not valid_chunks:
-                raise RuntimeError("No valid audio chunks to merge")
-            
+                msg = "No valid audio chunks to merge"
+                raise RuntimeError(msg)
+
             # Merge valid chunks
             combined = valid_chunks[0]
             for segment in valid_chunks[1:]:
                 combined = combined + segment
-            
+
             # Export with specific parameters
             output = BytesIO()
-            combined.export(
-                output,
-                format="mp3",
-                codec=DEFAULT_CODEC,
-                bitrate=DEFAULT_BITRATE
-            )
-            
+            combined.export(output, format="mp3", codec=DEFAULT_CODEC, bitrate=DEFAULT_BITRATE)
+
             result = output.getvalue()
             if len(result) == 0:
-                raise RuntimeError("Export produced empty output")
-            
+                msg = "Export produced empty output"
+                raise RuntimeError(msg)
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Audio merge failed: {str(e)}", exc_info=True)
             # If merging fails, return the first valid chunk as fallback
             if audio_chunks:
                 return audio_chunks[0]
-            raise RuntimeError(f"Failed to merge audio chunks and no valid fallback found: {str(e)}")
+            msg = f"Failed to merge audio chunks and no valid fallback found: {str(e)}"
+            raise RuntimeError(msg)
 
-    def generate_audio(self, text: str, voice: str = GEMINI_MULTI_VOICE1, model: str = GEMINI_MULTI_TTS_MODEL, 
-                       voice2: str = GEMINI_MULTI_VOICE2, ending_message: str = "") -> bytes:
+    def generate_audio(
+        self,
+        text: str,
+        voice: str = GEMINI_MULTI_VOICE1,
+        model: str = GEMINI_MULTI_TTS_MODEL,
+        voice2: str = GEMINI_MULTI_VOICE2,
+        ending_message: str = "",
+    ) -> bytes:
         """
         Generate audio using Google Cloud TTS API with multi-speaker support.
         Handles text longer than 5000 bytes by chunking and merging.
@@ -253,7 +256,7 @@ class GeminiMultiTTS(TTSProvider):
                 # Add turns for each Q&A pair
                 for j, (question, answer) in enumerate(qa_pairs, 1):
                     logger.debug(f"Processing Q&A pair {j}/{len(qa_pairs)}")
-                    
+
                     # Split question into smaller chunks if needed
                     question_chunks = self.split_turn_text(question.strip())
                     logger.debug(f"Question split into {len(question_chunks)} chunks")
@@ -264,7 +267,7 @@ class GeminiMultiTTS(TTSProvider):
                         q_turn.text = q_chunk
                         q_turn.speaker = voice
                         multi_speaker_markup.turns.append(q_turn)
-                    
+
                     # Split answer into smaller chunks if needed
                     if answer:
                         answer_chunks = self.split_turn_text(answer.strip())
@@ -276,61 +279,53 @@ class GeminiMultiTTS(TTSProvider):
                             a_turn.text = a_chunk
                             a_turn.speaker = voice2
                             multi_speaker_markup.turns.append(a_turn)
-                
+
                 logger.debug(f"Created markup with {len(multi_speaker_markup.turns)} turns")
-                
+
                 # Create synthesis input with multi-speaker markup
-                synthesis_input = texttospeech_v1.SynthesisInput(
-                    multi_speaker_markup=multi_speaker_markup
-                )
-                
+                synthesis_input = texttospeech_v1.SynthesisInput(multi_speaker_markup=multi_speaker_markup)
+
                 logger.debug("Calling synthesize_speech API")
                 # Set voice parameters
-                voice_params = texttospeech_v1.VoiceSelectionParams(
-                    language_code=GEMINI_MULTI_LANGUAGE,
-                    name=model
-                )
-                
+                voice_params = texttospeech_v1.VoiceSelectionParams(language_code=GEMINI_MULTI_LANGUAGE, name=model)
+
                 # Set audio config
                 audio_config = texttospeech_v1.AudioConfig(
                     audio_encoding=texttospeech_v1.AudioEncoding.MP3,
                 )
-                
+
                 # Generate speech for this chunk
                 response = self.client.synthesize_speech(
-                    input=synthesis_input,
-                    voice=voice_params,
-                    audio_config=audio_config
+                    input=synthesis_input, voice=voice_params, audio_config=audio_config
                 )
 
                 audio_chunks.append(response.audio_content)
             return self.merge_audio(audio_chunks)
-        
-            
+
         except Exception as e:
             logger.error(f"Failed to generate audio: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Failed to generate audio: {str(e)}") from e
-    
+            msg = f"Failed to generate audio: {str(e)}"
+            raise RuntimeError(msg) from e
+
     def get_supported_tags(self) -> list[str]:
         """Get supported SSML tags."""
         return list(COMMON_SSML_TAGS)
-        
+
     def validate_parameters(self, text: str, voice: str, model: str) -> None:
         """
         Validate input parameters before generating audio.
-        
+
         Args:
             text (str): Input text
             voice (str): Voice ID
             model (str): Model name
-            
+
         Raises:
             ValueError: If parameters are invalid
         """
         super().validate_parameters(text, voice, model)
-        
+
         # Additional validation for multi-speaker model
         if model != GEMINI_MULTI_TTS_MODEL:
-            raise ValueError(
-                f"Google Multi-speaker TTS requires model='{GEMINI_MULTI_TTS_MODEL}'"
-            )
+            msg = f"Google Multi-speaker TTS requires model='{GEMINI_MULTI_TTS_MODEL}'"
+            raise ValueError(msg)

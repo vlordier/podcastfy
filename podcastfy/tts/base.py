@@ -1,64 +1,69 @@
 """Abstract base class for Text-to-Speech providers."""
 
+import re
 from abc import ABC, abstractmethod
 from typing import ClassVar, NamedTuple
-import re
 
-from podcastfy.utils.enums import SpeakerTag
 from podcastfy.utils.constants import COMMON_SSML_TAGS
+from podcastfy.utils.enums import SpeakerTag
 
-QAPair = NamedTuple("QAPair", [("question", str), ("answer", str)])
+
+class QAPair(NamedTuple):
+    question: str
+    answer: str
 
 
 class TTSProvider(ABC):
     """Abstract base class that defines the interface for TTS providers."""
-    
+
     multi_speaker: ClassVar[bool] = False
-    
+
     @abstractmethod
-    def generate_audio(self, text: str, voice: str, model: str, voice2: str = None) -> bytes:
+    def generate_audio(self, text: str, voice: str, model: str, voice2: str | None = None) -> bytes:
         """
         Generate audio from text using the provider's API.
-        
+
         Args:
             text: Text to convert to speech
             voice: Voice ID/name to use
             model: Model ID/name to use
             voice2: Second voice ID/name for multi-speaker providers
-            
+
         Returns:
             Audio data as bytes
-            
+
         Raises:
             ValueError: If invalid parameters are provided
             RuntimeError: If audio generation fails
         """
-        pass
 
     def get_supported_tags(self) -> list[str]:
         """
         Get set of SSML tags supported by this provider.
-        
+
         Returns:
             Set of supported SSML tag names
         """
         return list(COMMON_SSML_TAGS)
-    
-    def validate_parameters(self, text: str, voice: str, model: str, voice2: str = None) -> None:
+
+    def validate_parameters(self, text: str, voice: str, model: str, voice2: str | None = None) -> None:
         """
         Validate input parameters before generating audio.
-        
+
         Raises:
             ValueError: If any parameter is invalid
         """
         if not text:
-            raise ValueError("Text cannot be empty")
+            msg = "Text cannot be empty"
+            raise ValueError(msg)
         if not voice:
-            raise ValueError("Voice must be specified")
+            msg = "Voice must be specified"
+            raise ValueError(msg)
         if not model:
-            raise ValueError("Model must be specified")
-        
-    def split_qa(self, input_text: str, ending_message: str, supported_tags: list[str] = None) -> list[QAPair]:
+            msg = "Model must be specified"
+            raise ValueError(msg)
+
+    def split_qa(self, input_text: str, ending_message: str, supported_tags: list[str] | None = None) -> list[QAPair]:
         """
         Split the input text into question-answer pairs.
 
@@ -70,7 +75,7 @@ class TTSProvider(ABC):
                 List[Tuple[str, str]]: A list of tuples containing (Person1, Person2) dialogues.
         """
         input_text = self.clean_tss_markup(input_text, supported_tags=supported_tags)
-        
+
         # Add placeholder if input_text starts with <Person2>
         if input_text.strip().startswith("<Person2>"):
             input_text = "<Person1> Humm... </Person1>" + input_text
@@ -86,13 +91,13 @@ class TTSProvider(ABC):
         matches = re.findall(pattern, input_text, re.DOTALL)
 
         # Process the matches to remove extra whitespace and newlines
-        processed_matches = [
-            QAPair(" ".join(person1.split()).strip(), " ".join(person2.split()).strip())
-            for person1, person2 in matches
+        return [
+            QAPair(" ".join(person1.split()).strip(), " ".join(person2.split()).strip()) for person1, person2 in matches
         ]
-        return processed_matches
 
-    def clean_tss_markup(self, input_text: str, additional_tags: list[SpeakerTag] | None = None, supported_tags: list[str] | None = None) -> str:
+    def clean_tss_markup(
+        self, input_text: str, additional_tags: list[SpeakerTag] | None = None, supported_tags: list[str] | None = None
+    ) -> str:
         """
         Remove unsupported TSS markup tags from the input text while preserving supported SSML tags.
 
@@ -112,20 +117,22 @@ class TTSProvider(ABC):
         supported_tags.extend(additional_tags)
 
         # Create a pattern that matches any tag not in the supported list
-        pattern = r'</?(?!(?:' + '|'.join(supported_tags) + r')\b)[^>]+>'
+        pattern = r"</?(?!(?:" + "|".join(supported_tags) + r")\b)[^>]+>"
 
         # Remove unsupported tags
-        cleaned_text = re.sub(pattern, '', input_text)
+        cleaned_text = re.sub(pattern, "", input_text)
 
         # Remove any leftover empty lines
-        cleaned_text = re.sub(r'\n\s*\n', '\n', cleaned_text)
+        cleaned_text = re.sub(r"\n\s*\n", "\n", cleaned_text)
 
         # Ensure closing tags for additional tags are preserved
         additional_tag_values = [str(tag) for tag in additional_tags]
         for tag in additional_tag_values:
-            cleaned_text = re.sub(f'<{tag}>(.*?)(?=<(?:{"|".join(additional_tag_values)})>|$)', 
-                                f'<{tag}>\\1</{tag}>', 
-                                cleaned_text, 
-                                flags=re.DOTALL)
+            cleaned_text = re.sub(
+                f"<{tag}>(.*?)(?=<(?:{'|'.join(additional_tag_values)})>|$)",
+                f"<{tag}>\\1</{tag}>",
+                cleaned_text,
+                flags=re.DOTALL,
+            )
 
         return cleaned_text.strip()

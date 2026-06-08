@@ -1,15 +1,19 @@
 """Edge TTS provider implementation."""
 
-import edge_tts
+import asyncio
 import os
 import tempfile
+
+import edge_tts
 import nest_asyncio
-import asyncio
-from ..base import TTSProvider
+
 from podcastfy.utils.constants import COMMON_SSML_TAGS, EDGE_DEFAULT_MODEL
 
+from ..base import TTSProvider
+
+
 class EdgeTTS(TTSProvider):
-    def __init__(self, api_key: str = None, model: str = None) -> None:
+    def __init__(self, api_key: str | None = None, model: str | None = None) -> None:
         """
         Initialize Edge TTS provider.
 
@@ -20,23 +24,23 @@ class EdgeTTS(TTSProvider):
         self.model = model or EDGE_DEFAULT_MODEL  # Edge TTS doesn't use models, but we set it for consistency
         self._api_key = api_key  # unused, kept for interface compatibility
 
-    def generate_audio(self, text: str, voice: str, model: str, voice2: str = None) -> bytes:
+    def generate_audio(self, text: str, voice: str, model: str, voice2: str | None = None) -> bytes:
         """Generate audio using Edge TTS."""
-        
+
         # Apply nest_asyncio to allow nested event loops
         nest_asyncio.apply()
-        
+
         async def _generate():
             communicate = edge_tts.Communicate(text, voice)
             # Create a temporary file with proper context management
-            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp_file:
+            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp_file:
                 temp_path = tmp_file.name
-                
+
             try:
                 # Save audio to temporary file
                 await communicate.save(temp_path)
                 # Read the audio data
-                with open(temp_path, 'rb') as f:
+                with open(temp_path, "rb") as f:
                     return f.read()
             finally:
                 # Clean up temporary file
@@ -46,7 +50,7 @@ class EdgeTTS(TTSProvider):
         # Use nest_asyncio to handle nested event loops
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(_generate())
-        
+
     def get_supported_tags(self) -> list[str]:
         """Get supported SSML tags."""
         return list(COMMON_SSML_TAGS)

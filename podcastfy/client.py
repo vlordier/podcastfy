@@ -8,18 +8,22 @@ generation, and text-to-speech conversion processes.
 
 import os
 import uuid
-import typer
-from podcastfy.content_parser.content_extractor import ContentExtractor
-from podcastfy.content_generator import ContentGenerator
-from podcastfy.text_to_speech import TextToSpeech
-from podcastfy.utils.config import load_app_config_model, AppConfigModel
-from podcastfy.utils.config_conversation import load_conversation_config_model, ConversationConfigModel, OutputDirectories
-from podcastfy.utils.logger import setup_logger
-from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
-from podcastfy.utils.constants import DEFAULT_TRANSCRIPTS_DIR, DEFAULT_AUDIO_DIR
 from typing import Any
 
-import logging
+import typer
+
+from podcastfy.content_generator import ContentGenerator
+from podcastfy.content_parser.content_extractor import ContentExtractor
+from podcastfy.text_to_speech import TextToSpeech
+from podcastfy.utils.config import load_app_config_model
+from podcastfy.utils.config_conversation import (
+    ConversationConfigModel,
+    OutputDirectories,
+    load_conversation_config_model,
+)
+from podcastfy.utils.constants import DEFAULT_AUDIO_DIR, DEFAULT_TRANSCRIPTS_DIR
+from podcastfy.utils.enums import ApiKeyLabel, TTSProvider
+from podcastfy.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -43,7 +47,7 @@ def process_content(
     model_name: str | None = None,
     api_key_label: str | None = None,
     topic: str | None = None,
-    longform: bool = False
+    longform: bool = False,
 ):
     """
     Process URLs, a transcript file, image paths, or raw text to generate a podcast or transcript.
@@ -66,7 +70,13 @@ def process_content(
                         known_fields[k] = v
                 tts = conversation_config.get("text_to_speech", {})
                 if isinstance(tts, dict):
-                    for nested_key in ("output_directories", "temp_audio_dir", "ending_message", "audio_format", "default_tts_model"):
+                    for nested_key in (
+                        "output_directories",
+                        "temp_audio_dir",
+                        "ending_message",
+                        "audio_format",
+                        "default_tts_model",
+                    ):
                         if nested_key in tts and nested_key not in known_fields:
                             known_fields[nested_key] = tts[nested_key]
                 if known_fields:
@@ -89,14 +99,11 @@ def process_content(
                 content_extractor = ContentExtractor()
 
             content_generator = ContentGenerator(
-                is_local=is_local,
-                model_name=model_name,
-                api_key_label=api_key_label,
-                conversation_config=conv_config
+                is_local=is_local, model_name=model_name, api_key_label=api_key_label, conversation_config=conv_config
             )
 
             combined_content = ""
-            
+
             if urls:
                 logger.info(f"Processing {len(urls)} links")
                 contents = [content_extractor.extract_content(link) for link in urls]
@@ -116,7 +123,11 @@ def process_content(
 
             # Generate Q&A content using output directory from conversation config
             random_filename = f"transcript_{uuid.uuid4().hex}.txt"
-            transcripts_dir = output_directories.transcripts or DEFAULT_TRANSCRIPTS_DIR if output_directories else DEFAULT_TRANSCRIPTS_DIR
+            transcripts_dir = (
+                output_directories.transcripts or DEFAULT_TRANSCRIPTS_DIR
+                if output_directories
+                else DEFAULT_TRANSCRIPTS_DIR
+            )
             transcript_filepath = os.path.join(
                 transcripts_dir,
                 random_filename,
@@ -125,7 +136,7 @@ def process_content(
                 combined_content,
                 image_file_paths=image_paths or [],
                 output_filepath=transcript_filepath,
-                longform=longform
+                longform=longform,
             )
 
         if generate_audio:
@@ -147,9 +158,7 @@ def process_content(
 
             random_filename = f"podcast_{uuid.uuid4().hex}.mp3"
             audio_dir = output_directories.audio or DEFAULT_AUDIO_DIR if output_directories else DEFAULT_AUDIO_DIR
-            audio_file = os.path.join(
-                audio_dir, random_filename
-            )
+            audio_file = os.path.join(audio_dir, random_filename)
             text_to_speech.convert_to_speech(qa_content, audio_file)
             logger.info(f"Podcast generated successfully using {tts_model} TTS model")
             return audio_file
@@ -165,53 +174,34 @@ def process_content(
 @app.command()
 def main(
     urls: list[str] = typer.Option(None, "--url", "-u", help="URLs to process"),
-    file: typer.FileText = typer.Option(
-        None, "--file", "-f", help="File containing URLs, one per line"
-    ),
-    transcript: typer.FileText = typer.Option(
-        None, "--transcript", "-t", help="Path to a transcript file"
-    ),
+    file: typer.FileText = typer.Option(None, "--file", "-f", help="File containing URLs, one per line"),
+    transcript: typer.FileText = typer.Option(None, "--transcript", "-t", help="Path to a transcript file"),
     tts_model: str = typer.Option(
         None,
         "--tts-model",
         "-tts",
         help="TTS model to use (openai, elevenlabs, edge, or gemini)",
     ),
-    transcript_only: bool = typer.Option(
-        False, "--transcript-only", help="Generate only a transcript without audio"
-    ),
+    transcript_only: bool = typer.Option(False, "--transcript-only", help="Generate only a transcript without audio"),
     conversation_config_path: str = typer.Option(
         None,
         "--conversation-config",
         "-cc",
         help="Path to custom conversation configuration YAML file",
     ),
-    image_paths: list[str] = typer.Option(
-        None, "--image", "-i", help="Paths to image files to process"
-    ),
+    image_paths: list[str] = typer.Option(None, "--image", "-i", help="Paths to image files to process"),
     is_local: bool = typer.Option(
         False,
         "--local",
         "-l",
         help="Use a local LLM instead of a remote one (http://localhost:8080)",
     ),
-    text: str = typer.Option(
-        None, "--text", "-txt", help="Raw text input to be processed"
-    ),
-    llm_model_name: str = typer.Option(
-        None, "--llm-model-name", "-m", help="LLM model name for transcript generation"
-    ),
-    api_key_label: str = typer.Option(
-        None, "--api-key-label", "-k", help="Environment variable name for LLMAPI key"
-    ),
-    topic: str = typer.Option(
-        None, "--topic", "-tp", help="Topic to generate podcast about"
-    ),
+    text: str = typer.Option(None, "--text", "-txt", help="Raw text input to be processed"),
+    llm_model_name: str = typer.Option(None, "--llm-model-name", "-m", help="LLM model name for transcript generation"),
+    api_key_label: str = typer.Option(None, "--api-key-label", "-k", help="Environment variable name for LLMAPI key"),
+    topic: str = typer.Option(None, "--topic", "-tp", help="Topic to generate podcast about"),
     longform: bool = typer.Option(
-        False, 
-        "--longform", 
-        "-lf", 
-        help="Generate long-form content (only available for text input without images)"
+        False, "--longform", "-lf", help="Generate long-form content (only available for text input without images)"
     ),
 ):
     """
@@ -247,7 +237,7 @@ def main(
                 model_name=llm_model_name,
                 api_key_label=api_key_label,
                 topic=topic,
-                longform=longform
+                longform=longform,
             )
         else:
             urls_list = urls or []
@@ -255,8 +245,9 @@ def main(
                 urls_list.extend([line.strip() for line in file if line.strip()])
 
             if not urls_list and not image_paths and not text and not topic:
+                msg = "No input provided. Use --url, --file, --transcript, --image, --text, or --topic."
                 raise typer.BadParameter(
-                    "No input provided. Use --url, --file, --transcript, --image, --text, or --topic."
+                    msg
                 )
 
             final_output = process_content(
@@ -271,15 +262,13 @@ def main(
                 model_name=llm_model_name,
                 api_key_label=api_key_label,
                 topic=topic,
-                longform=longform
+                longform=longform,
             )
 
         if transcript_only:
             typer.echo(f"Transcript generated successfully: {final_output}")
         else:
-            typer.echo(
-                f"Podcast generated successfully using {tts_model} TTS model: {final_output}"
-            )
+            typer.echo(f"Podcast generated successfully using {tts_model} TTS model: {final_output}")
 
     except Exception as e:
         typer.echo(f"An error occurred: {str(e)}", err=True)
@@ -328,7 +317,6 @@ def generate_podcast(
         Optional[str]: Path to the final podcast audio file, or None if only generating a transcript.
     """
     try:
-        print("Generating podcast...")
         # Load default config
         app_config = load_app_config_model()
 
@@ -346,7 +334,11 @@ def generate_podcast(
 
         # Use provided tts_model if specified, otherwise use the one from config
         if tts_model is None:
-            tts_model_value = conversation_config.default_tts_model if hasattr(conversation_config, 'default_tts_model') else TTSProvider.OPENAI.value
+            tts_model_value = (
+                conversation_config.default_tts_model
+                if hasattr(conversation_config, "default_tts_model")
+                else TTSProvider.OPENAI.value
+            )
             tts_model = tts_model_value.value if isinstance(tts_model_value, TTSProvider) else tts_model_value
 
         if transcript_file:
@@ -363,7 +355,7 @@ def generate_podcast(
                 model_name=llm_model_name,
                 api_key_label=api_key_label,
                 topic=topic,
-                longform=longform
+                longform=longform,
             )
         else:
             urls_list = urls or []
@@ -372,9 +364,12 @@ def generate_podcast(
                     urls_list.extend([line.strip() for line in file if line.strip()])
 
             if not urls_list and not image_paths and not text and not topic:
-                raise ValueError(
+                msg = (
                     "No input provided. Please provide either 'urls', 'url_file', "
                     "'transcript_file', 'image_paths', 'text', or 'topic'."
+                )
+                raise ValueError(
+                    msg
                 )
 
             return process_content(
@@ -389,7 +384,7 @@ def generate_podcast(
                 model_name=llm_model_name,
                 api_key_label=api_key_label,
                 topic=topic,
-                longform=longform
+                longform=longform,
             )
 
     except Exception as e:

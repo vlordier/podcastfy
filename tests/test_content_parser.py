@@ -1,8 +1,9 @@
 import unittest
+
 from podcastfy.content_parser.content_extractor import ContentExtractor
-from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
-from podcastfy.content_parser.website_extractor import WebsiteExtractor
 from podcastfy.content_parser.pdf_extractor import PDFExtractor
+from podcastfy.content_parser.website_extractor import WebsiteExtractor
+from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
 
 
 class TestContentParser(unittest.TestCase):
@@ -29,9 +30,7 @@ class TestContentParser(unittest.TestCase):
             expected_transcript = f.read()
 
         # Assert that the first 100 characters of the extracted transcript match the expected transcript
-        self.assertEqual(
-            extracted_transcript[:100].strip(), expected_transcript[:100].strip()
-        )
+        assert extracted_transcript[:100].strip() == expected_transcript[:100].strip()
 
     def test_website_extractor(self):
         """
@@ -53,7 +52,7 @@ class TestContentParser(unittest.TestCase):
             expected_content = f.read()
         print(expected_content.strip())
         # Assert that the extracted content matches the expected content
-        self.assertEqual(extracted_content.strip(), expected_content.strip())
+        assert extracted_content.strip() == expected_content.strip()
 
     def test_pdf_extractor(self):
         """
@@ -73,9 +72,7 @@ class TestContentParser(unittest.TestCase):
             expected_content = f.read()
 
         # Assert that the first 500 characters of the extracted content match the expected content
-        self.assertEqual(
-            extracted_content[:500].strip(), expected_content[:500].strip()
-        )
+        assert extracted_content[:500].strip() == expected_content[:500].strip()
 
     @unittest.skip("Too expensive to be auto tested on Github Actions")
     def test_generate_topic_content(self):
@@ -87,16 +84,13 @@ class TestContentParser(unittest.TestCase):
         content = extractor.generate_topic_content(topic)
 
         # Verify the content
-        self.assertIsNotNone(content)
-        self.assertIsInstance(content, str)
-        self.assertGreater(len(content), 100)  # Content should be substantial
+        assert content is not None
+        assert isinstance(content, str)
+        assert len(content) > 100  # Content should be substantial
 
         # Check if content is relevant to the topic
         lower_content = content.lower()
-        self.assertTrue(
-            any(term in lower_content for term in ["openai"]),
-            "Generated content should be relevant to the topic",
-        )
+        assert any(term in lower_content for term in ["openai"]), "Generated content should be relevant to the topic"
 
 
 if __name__ == "__main__":

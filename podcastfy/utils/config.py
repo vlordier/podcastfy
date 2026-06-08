@@ -7,46 +7,53 @@ It uses a YAML file for non-sensitive configuration settings.
 
 import os
 from typing import Any
+
 import yaml
 from pydantic import BaseModel, Field
 
-from podcastfy.utils.constants import DEFAULT_GEMINI_LLM, DEFAULT_MAX_OUTPUT_TOKENS, MIN_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS, DEFAULT_TIMEOUT_SECONDS
+from podcastfy.utils.constants import (
+    DEFAULT_GEMINI_LLM,
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_TIMEOUT_SECONDS,
+    MAX_OUTPUT_TOKENS,
+    MIN_OUTPUT_TOKENS,
+)
 
 
-def get_config_path(config_file: str = 'config.yaml') -> str | None:
-	"""
-	Get the path to the config.yaml file.
-	
-	Returns:
-		str: The path to the config.yaml file.
-	"""
-	try:
-		base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-		
-		# Look for config.yaml in the package root
-		config_path = os.path.join(base_path, config_file)
-		if os.path.exists(config_path):
-			return config_path
-		
-		# If not found, look in the current working directory
-		config_path = os.path.join(os.getcwd(), config_file)
-		if os.path.exists(config_path):
-			return config_path
-		
-		raise FileNotFoundError(f"{config_file} not found")
-	
-	except (FileNotFoundError, PermissionError, OSError) as e:
-		print(f"Error locating {config_file}: {e}")
-		return None
+def get_config_path(config_file: str = "config.yaml") -> str | None:
+    """
+    Get the path to the config.yaml file.
+
+    Returns:
+            str: The path to the config.yaml file.
+    """
+    try:
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        # Look for config.yaml in the package root
+        config_path = os.path.join(base_path, config_file)
+        if os.path.exists(config_path):
+            return config_path
+
+        # If not found, look in the current working directory
+        config_path = os.path.join(os.getcwd(), config_file)
+        if os.path.exists(config_path):
+            return config_path
+
+        msg = f"{config_file} not found"
+        raise FileNotFoundError(msg)
+
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        return None
 
 
 def _load_yaml_config() -> dict:
-	"""Load the raw YAML configuration as a dictionary."""
-	config_path = get_config_path()
-	if config_path:
-		with open(config_path, 'r') as file:
-			return yaml.safe_load(file)
-	return {}
+    """Load the raw YAML configuration as a dictionary."""
+    config_path = get_config_path()
+    if config_path:
+        with open(config_path, "r") as file:
+            return yaml.safe_load(file)
+    return {}
 
 
 class ContentGeneratorConfigModel(BaseModel):
@@ -65,7 +72,9 @@ class ContentExtractorConfigModel(BaseModel):
 class WebsiteExtractorConfigModel(BaseModel):
     jina_api_url: str = "https://r.jina.ai"
     markdown_cleaning: dict = Field(default_factory=lambda: {"remove_patterns": []})
-    unwanted_tags: list[str] = Field(default_factory=lambda: ["script", "style", "nav", "footer", "header", "aside", "noscript"])
+    unwanted_tags: list[str] = Field(
+        default_factory=lambda: ["script", "style", "nav", "footer", "header", "aside", "noscript"]
+    )
     user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     timeout: int = DEFAULT_TIMEOUT_SECONDS
 

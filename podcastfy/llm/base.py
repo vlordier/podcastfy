@@ -10,5 +10,4 @@ class LLMProvider(ABC):
         prompt: str,
         images: list[str] | None = None,
         config_conversation: dict | None = None,
-    ) -> str:
-        ...
+    ) -> str: ...

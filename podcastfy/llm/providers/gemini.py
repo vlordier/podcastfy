@@ -1,15 +1,19 @@
 """Gemini LLM provider implementation."""
+
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
+
 from langchain_core.output_parsers import StrOutputParser
-from ..base import LLMProvider
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 from podcastfy.utils.constants import (
-    DEFAULT_PRESENCE_PENALTY,
     DEFAULT_FREQUENCY_PENALTY,
     DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_PRESENCE_PENALTY,
 )
 from podcastfy.utils.enums import ApiKeyLabel
+
+from ..base import LLMProvider
 
 
 class GeminiLLM(LLMProvider):
@@ -33,8 +37,10 @@ class GeminiLLM(LLMProvider):
         images: list[str] | None = None,
         config_conversation: dict | None = None,
     ) -> str:
-        prompt_template = ChatPromptTemplate.from_messages([
-            ("human", prompt),
-        ])
+        prompt_template = ChatPromptTemplate.from_messages(
+            [
+                ("human", prompt),
+            ]
+        )
         chain = prompt_template | self.llm | StrOutputParser()
         return chain.invoke({})

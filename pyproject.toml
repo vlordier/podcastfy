@@ -11,7 +11,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 setuptools = "^75.1.0"
 wheel = "^0.44.0"
 cython = "^3.0.11"
@@ -55,12 +55,12 @@ uvicorn = "^0.34"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
-black = "^24.8.0"
 sphinx = ">=8.0.2"
 nbsphinx = "0.9.5"
 ipykernel = "^6.29.5"
 ffmpeg = "^1.4"
 mypy = "^1.11.2"
+ruff = "^0.15.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -68,6 +68,71 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 build_docs = "build_docs:main"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D",       # docstrings
+    "ANN",     # annotations (too noisy for existing codebase)
+    "COM812",  # trailing comma
+    "E501",    # line length (handled by formatter)
+    "INP001",  # implicit namespace package
+    "PLR0913", # too many arguments
+    "PLR0912", # too many branches
+    "PLR0915", # too many statements
+    "C901",    # too complex
+    "FBT001",  # boolean positional arg
+    "FBT002",  # boolean positional arg
+    "B008",    # function call in default
+    "ARG001",  # unused function arg
+    "ARG002",  # unused method arg (ABC interface compliance)
+    "FAST002", # FastAPI dependency without Annotated
+    "TRY301",  # abstract raise
+    "BLE001",  # blind exception
+    "G004",    # logging f-string
+    "G201",    # logging .exception
+    "RET505",  # unnecessary else after return
+    "SIM102",  # nested if
+    "SIM105",  # suppress
+    "PERF403", # dict comprehension
+    "RUF010",  # explicit conversion flag
+    "UP015",   # unnecessary mode
+    "PTH",     # pathlib (too many to fix in one pass)
+    "Q000",    # quote style
+    "TID252",  # relative imports
+    "FBT003",  # boolean positional arg
+    "PLR2004", # magic value comparison
+    "TRY400",  # logging.exception
+    "B904",    # raise from
+    "F841",    # unused variable
+    "W293",    # blank line whitespace
+    "N806",    # non-lowercase variable (intentional constants)
+    "TRY300",  # move to else block
+    "TRY002",  # create own exception
+    "TRY003",  # avoid long exception messages
+    "EM101",   # exception string literal
+    "EM102",   # exception f-string literal
+    "SIM108",  # ternary operator
+    "RET504",  # unnecessary assignment before return
+    "RUF005",  # collection concatenation
+    "RUF012",  # mutable class default
+    "ASYNC230", # async file open
+    "ASYNC240", # async os.path
+    "PLC0415", # import at top level
+    "T201",    # print found
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S108", "INP001", "ANN"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
 
 
 

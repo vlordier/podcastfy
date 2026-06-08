@@ -3,9 +3,11 @@ Unit tests for the Podcastfy CLI client.
 """
 
 import os
-import pytest
 import re
+
+import pytest
 from typer.testing import CliRunner
+
 from podcastfy.client import app
 from podcastfy.utils.constants import MIN_AUDIO_FILE_BYTES
 
@@ -25,12 +27,12 @@ MOCK_IMAGE_PATHS = [
 ]
 MOCK_CONVERSATION_CONFIG = """
 word_count: 300
-conversation_style: 
+conversation_style:
   - formal
   - educational
 roles_person1: professor
 roles_person2: student
-dialogue_structure: 
+dialogue_structure:
   - Introduction
   - Main Points
   - Case Studies
@@ -39,7 +41,7 @@ dialogue_structure:
 podcast_name: Teachfy
 podcast_tagline: Learning Through Conversation
 output_language: English
-engagement_techniques: 
+engagement_techniques:
   - examples
   - questions
 creativity: 0
@@ -90,9 +92,7 @@ def sample_config():
 
 
 def test_generate_podcast_from_urls(sample_config):
-    result = runner.invoke(
-        app, ["--url", MOCK_URLS[0], "--url", MOCK_URLS[1], "--tts-model", "edge"]
-    )
+    result = runner.invoke(app, ["--url", MOCK_URLS[0], "--url", MOCK_URLS[1], "--tts-model", "edge"])
     assert result.exit_code == 0
     assert "Podcast generated successfully using edge TTS model" in result.stdout
     audio_path = result.stdout.split(": ")[-1].strip()
@@ -102,29 +102,21 @@ def test_generate_podcast_from_urls(sample_config):
 
 
 def test_generate_podcast_from_file(mock_files, sample_config):
-    result = runner.invoke(
-        app, ["--file", mock_files["url_file"], "--tts-model", "edge"]
-    )
+    result = runner.invoke(app, ["--file", mock_files["url_file"], "--tts-model", "edge"])
     assert result.exit_code == 0
     assert "Podcast generated successfully using edge TTS model" in result.stdout
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
-    assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
-    )  # Check if larger than 1KB
+    assert os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 
 def test_generate_podcast_from_transcript(mock_files, sample_config):
-    result = runner.invoke(
-        app, ["--transcript", mock_files["transcript_file"], "--tts-model", "edge"]
-    )
+    result = runner.invoke(app, ["--transcript", mock_files["transcript_file"], "--tts-model", "edge"])
     assert result.exit_code == 0
     assert "Podcast generated successfully using edge TTS model" in result.stdout
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
-    assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
-    )  # Check if larger than 1KB
+    assert os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 
 def test_generate_transcript_only(sample_config):
@@ -136,22 +128,14 @@ def test_generate_transcript_only(sample_config):
     transcript_path = result.stdout.split(": ")[-1].strip()
 
     assert transcript_path, "Transcript path is empty"
-    assert os.path.exists(
-        transcript_path
-    ), f"Transcript file does not exist at path: {transcript_path}"
+    assert os.path.exists(transcript_path), f"Transcript file does not exist at path: {transcript_path}"
 
     with open(transcript_path, "r") as f:
         content = f.read()
         assert content != ""
         assert isinstance(content, str)
-        assert all(
-            "<Person1>" in tag and "</Person1>" in tag
-            for tag in re.findall(r"<Person1>.*?</Person1>", content)
-        )
-        assert all(
-            "<Person2>" in tag and "</Person2>" in tag
-            for tag in re.findall(r"<Person2>.*?</Person2>", content)
-        )
+        assert all("<Person1>" in tag and "</Person1>" in tag for tag in re.findall(r"<Person1>.*?</Person1>", content))
+        assert all("<Person2>" in tag and "</Person2>" in tag for tag in re.findall(r"<Person2>.*?</Person2>", content))
 
 
 @pytest.mark.skip(reason="Not supported yet")
@@ -171,9 +155,7 @@ def test_generate_podcast_from_urls_and_file(mock_files, sample_config):
     assert "Podcast generated successfully using edge TTS model" in result.stdout
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
-    assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
-    )  # Check if larger than 1KB
+    assert os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 
 def test_generate_podcast_from_image(sample_config):
@@ -182,9 +164,7 @@ def test_generate_podcast_from_image(sample_config):
     assert "Podcast generated successfully using edge TTS model" in result.stdout
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
-    assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
-    )  # Check if larger than 1KB
+    assert os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 
 @pytest.mark.skip(reason="To be further tested")
@@ -225,9 +205,7 @@ def test_generate_podcast_from_urls_and_images(sample_config):
     assert "Podcast generated successfully using edge TTS model" in result.stdout
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
-    assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
-    )  # Check if larger than 1KB
+    assert os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 
 @pytest.mark.skip(reason="Requires local LLM running")
@@ -244,9 +222,7 @@ def test_generate_transcript_with_local_llm(sample_config):
         content = f.read()
         assert content != ""
         assert isinstance(content, str)
-        assert re.match(
-            r"(<Person1>.*?</Person1>\s*<Person2>.*?</Person2>\s*)+", content
-        )
+        assert re.match(r"(<Person1>.*?</Person1>\s*<Person2>.*?</Person2>\s*)+", content)
 
 
 def test_generate_podcast_from_raw_text():
@@ -337,9 +313,9 @@ def test_generate_transcript_only_with_custom_llm():
 
         # Verify content is substantial
         min_length = 500  # Minimum expected length in characters
-        assert (
-            len(content) > min_length
-        ), f"Content length ({len(content)}) is less than minimum expected ({min_length})"
+        assert len(content) > min_length, (
+            f"Content length ({len(content)}) is less than minimum expected ({min_length})"
+        )
 
     # Clean up
     os.remove(transcript_path)
@@ -348,9 +324,7 @@ def test_generate_transcript_only_with_custom_llm():
 @pytest.mark.skip(reason="Too expensive to be auto tested on Github Actions")
 def test_generate_podcast_from_topic():
     """Test generating a podcast from a topic using CLI."""
-    result = runner.invoke(
-        app, ["--topic", "Artificial Intelligence Ethics", "--tts-model", "edge"]
-    )
+    result = runner.invoke(app, ["--topic", "Artificial Intelligence Ethics", "--tts-model", "edge"])
 
     assert result.exit_code == 0
     assert "Podcast generated successfully using edge TTS model" in result.stdout

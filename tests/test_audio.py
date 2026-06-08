@@ -1,5 +1,6 @@
-import unittest
 import os
+import unittest
+
 from podcastfy.text_to_speech import TextToSpeech
 from podcastfy.utils.constants import MIN_AUDIO_FILE_BYTES
 
@@ -16,8 +17,8 @@ class TestAudio(unittest.TestCase):
         output_file = os.path.join(self.output_dir, "test_openai.mp3")
         tts.convert_to_speech(self.test_text, output_file)
 
-        self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
+        assert os.path.exists(output_file)
+        assert os.path.getsize(output_file) > MIN_AUDIO_FILE_BYTES
 
         # Clean up
         os.remove(output_file)
@@ -28,8 +29,8 @@ class TestAudio(unittest.TestCase):
         output_file = os.path.join(self.output_dir, "test_elevenlabs.mp3")
         tts.convert_to_speech(self.test_text, output_file)
 
-        self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
+        assert os.path.exists(output_file)
+        assert os.path.getsize(output_file) > MIN_AUDIO_FILE_BYTES
 
         # Clean up
         os.remove(output_file)
@@ -39,8 +40,8 @@ class TestAudio(unittest.TestCase):
         output_file = os.path.join(self.output_dir, "test_edge.mp3")
         tts.convert_to_speech(self.test_text, output_file)
 
-        self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
+        assert os.path.exists(output_file)
+        assert os.path.getsize(output_file) > MIN_AUDIO_FILE_BYTES
 
         # Clean up
         os.remove(output_file)
@@ -51,8 +52,8 @@ class TestAudio(unittest.TestCase):
         output_file = os.path.join(self.output_dir, "test_google.mp3")
         tts.convert_to_speech(self.test_text, output_file)
 
-        self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
+        assert os.path.exists(output_file)
+        assert os.path.getsize(output_file) > MIN_AUDIO_FILE_BYTES
 
         # Clean up
         os.remove(output_file)
@@ -63,8 +64,8 @@ class TestAudio(unittest.TestCase):
         output_file = os.path.join(self.output_dir, "test_google_multi.mp3")
         tts.convert_to_speech(self.test_text, output_file)
 
-        self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
+        assert os.path.exists(output_file)
+        assert os.path.getsize(output_file) > MIN_AUDIO_FILE_BYTES
 
         # Clean up
         os.remove(output_file)

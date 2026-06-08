@@ -1,28 +1,31 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 from langchain_core.runnables import Runnable
+
 from podcastfy.llm.base import LLMProvider
 from podcastfy.llm.factory import LLMProviderFactory, detect_llm_provider
 
 
 class TestLLMProviderABC(unittest.TestCase):
     def test_abc_cannot_be_instantiated(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             LLMProvider()  # type: ignore
 
     def test_detect_gemini(self):
-        self.assertEqual(detect_llm_provider("gemini-2.5-flash"), "gemini")
+        assert detect_llm_provider("gemini-2.5-flash") == "gemini"
 
     def test_detect_litellm(self):
-        self.assertEqual(detect_llm_provider("gpt-4"), "litellm")
-        self.assertEqual(detect_llm_provider("claude-3"), "litellm")
+        assert detect_llm_provider("gpt-4") == "litellm"
+        assert detect_llm_provider("claude-3") == "litellm"
 
     def test_detect_llamafile(self):
-        self.assertEqual(detect_llm_provider("llamafile"), "llamafile")
-        self.assertEqual(detect_llm_provider("local"), "llamafile")
+        assert detect_llm_provider("llamafile") == "llamafile"
+        assert detect_llm_provider("local") == "llamafile"
 
     def test_factory_unknown_provider(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LLMProviderFactory.create("nonexistent", api_key="", model="x")
 
 
@@ -33,11 +36,9 @@ class TestGeminiLLM(unittest.TestCase):
         mock_instance.invoke.return_value = "generated text"
         mock_llm_class.return_value = mock_instance
 
-        provider = LLMProviderFactory.create(
-            "gemini", api_key="fake-key", model="gemini-2.5-flash"
-        )
+        provider = LLMProviderFactory.create("gemini", api_key="fake-key", model="gemini-2.5-flash")
         result = provider.generate("test prompt")
-        self.assertEqual(result, "generated text")
+        assert result == "generated text"
         mock_instance.invoke.assert_called_once()
 
 
@@ -48,11 +49,9 @@ class TestLiteLLM(unittest.TestCase):
         mock_instance.invoke.return_value = "litellm response"
         mock_llm_class.return_value = mock_instance
 
-        provider = LLMProviderFactory.create(
-            "litellm", api_key="fake-key", model="gpt-4"
-        )
+        provider = LLMProviderFactory.create("litellm", api_key="fake-key", model="gpt-4")
         result = provider.generate("test prompt")
-        self.assertEqual(result, "litellm response")
+        assert result == "litellm response"
 
 
 class TestLlamafileLLM(unittest.TestCase):
@@ -62,11 +61,9 @@ class TestLlamafileLLM(unittest.TestCase):
         mock_instance.invoke.return_value = "llamafile response"
         mock_llm_class.return_value = mock_instance
 
-        provider = LLMProviderFactory.create(
-            "llamafile", api_key="", model="local"
-        )
+        provider = LLMProviderFactory.create("llamafile", api_key="", model="local")
         result = provider.generate("test prompt")
-        self.assertEqual(result, "llamafile response")
+        assert result == "llamafile response"
 
 
 if __name__ == "__main__":

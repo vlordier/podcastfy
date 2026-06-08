@@ -1,11 +1,12 @@
-import os
 import pytest
+
 from podcastfy.api.fast_app import app
 
 
 @pytest.fixture(scope="module")
 def client():
     from fastapi.testclient import TestClient
+
     return TestClient(app)
 
 
@@ -25,8 +26,9 @@ def sample_config():
         "is_long_form": False,
         "engagement_techniques": ["questions", "examples", "analogies"],
         "user_instructions": "Don't use the word Dwelve",
-        "output_language": "English"
+        "output_language": "English",
     }
+
 
 @pytest.mark.skip(reason="Trying to understand if other tests are passing")
 def test_generate_podcast_with_edge_tts(sample_config, client):
@@ -34,6 +36,7 @@ def test_generate_podcast_with_edge_tts(sample_config, client):
     assert response.status_code == 200
     assert "audioUrl" in response.json()
     assert response.json()["audioUrl"].startswith("http://testserver")
+
 
 def test_healthcheck(client):
     response = client.get("/health")

@@ -1,11 +1,10 @@
 import os
+
 import pytest
-import tempfile
+
 from podcastfy.client import generate_podcast
-from podcastfy.utils.config import get_config_path
 from podcastfy.utils.config_conversation import load_conversation_config_model
 from podcastfy.utils.constants import MIN_AUDIO_FILE_BYTES
-
 
 TEST_URL = "https://en.wikipedia.org/wiki/Friends"
 MOCK_IMAGE_PATHS = [
@@ -65,14 +64,10 @@ def sample_conversation_config():
 @pytest.fixture(autouse=True)
 def setup_test_directories(sample_conversation_config):
     """Create test directories if they don't exist."""
-    output_dirs = sample_conversation_config.get("text_to_speech", {}).get(
-        "output_directories", {}
-    )
+    output_dirs = sample_conversation_config.get("text_to_speech", {}).get("output_directories", {})
     for directory in output_dirs.values():
         os.makedirs(directory, exist_ok=True)
-    temp_dir = sample_conversation_config.get("text_to_speech", {}).get(
-        "temp_audio_dir"
-    )
+    temp_dir = sample_conversation_config.get("text_to_speech", {}).get("temp_audio_dir")
     if temp_dir:
         os.makedirs(temp_dir, exist_ok=True)
 
@@ -155,9 +150,7 @@ def test_generate_podcast_from_transcript_file(sample_conversation_config):
     """Test generating a podcast from an existing transcript file."""
     # First, generate a transcript
     transcript_file = os.path.join(
-        sample_conversation_config.get("text_to_speech", {})
-        .get("output_directories", {})
-        .get("transcripts"),
+        sample_conversation_config.get("text_to_speech", {}).get("output_directories", {}).get("transcripts"),
         "test_transcript.txt",
     )
     with open(transcript_file, "w") as f:
@@ -176,9 +169,9 @@ def test_generate_podcast_from_transcript_file(sample_conversation_config):
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
-    assert os.path.dirname(audio_file) == sample_conversation_config.get(
-        "text_to_speech", {}
-    ).get("output_directories", {}).get("audio")
+    assert os.path.dirname(audio_file) == sample_conversation_config.get("text_to_speech", {}).get(
+        "output_directories", {}
+    ).get("audio")
 
 
 def test_generate_podcast_with_custom_config(sample_config, sample_conversation_config):
@@ -196,46 +189,40 @@ def test_generate_podcast_with_custom_config(sample_config, sample_conversation_
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
-    assert (
-        os.path.dirname(audio_file)
-        == sample_conversation_config["text_to_speech"]["output_directories"]["audio"]
-    )
+    assert os.path.dirname(audio_file) == sample_conversation_config["text_to_speech"]["output_directories"]["audio"]
 
 
 def test_generate_from_local_pdf(sample_config):
     """Test generating a podcast from a local PDF file."""
     pdf_file = "tests/data/pdf/file.pdf"
-    audio_file = generate_podcast(
-        urls=[pdf_file], config=sample_config, tts_model="edge"
-    )
+    audio_file = generate_podcast(urls=[pdf_file], config=sample_config, tts_model="edge")
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
+
 
 @pytest.mark.skip(reason="Testing edge only on Github Action as it's free")
 def test_generate_from_local_pdf_multispeaker(sample_config):
     """Test generating a podcast from a local PDF file."""
     pdf_file = "tests/data/pdf/file.pdf"
-    audio_file = generate_podcast(
-        urls=[pdf_file], config=sample_config, tts_model="geminimulti"
-    )
+    audio_file = generate_podcast(urls=[pdf_file], config=sample_config, tts_model="geminimulti")
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
+
 @pytest.mark.skip(reason="Testing edge only on Github Action as it's free")
 def test_generate_from_local_pdf_multispeaker_longform(sample_config):
     """Test generating a podcast from a local PDF file."""
     pdf_file = "tests/data/pdf/file.pdf"
-    audio_file = generate_podcast(
-        urls=[pdf_file], config=sample_config, tts_model="geminimulti", longform=True
-    )
+    audio_file = generate_podcast(urls=[pdf_file], config=sample_config, tts_model="geminimulti", longform=True)
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
     assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
+
 
 def test_generate_podcast_no_urls_or_transcript():
     """Test that an error is raised when no URLs or transcript file is provided."""
@@ -247,9 +234,7 @@ def test_generate_podcast_from_images(sample_config, default_conversation_config
     """Test generating a podcast from two input images."""
     image_paths = MOCK_IMAGE_PATHS
 
-    audio_file = generate_podcast(
-        image_paths=image_paths, tts_model="edge", config=sample_config
-    )
+    audio_file = generate_podcast(image_paths=image_paths, tts_model="edge", config=sample_config)
 
     assert audio_file is not None
     assert os.path.exists(audio_file)
@@ -258,11 +243,7 @@ def test_generate_podcast_from_images(sample_config, default_conversation_config
 
     # Check if a transcript was generated
     transcript_dir = default_conversation_config.output_directories.transcripts
-    transcript_files = [
-        f
-        for f in os.listdir(transcript_dir)
-        if f.startswith("transcript_") and f.endswith(".txt")
-    ]
+    transcript_files = [f for f in os.listdir(transcript_dir) if f.startswith("transcript_") and f.endswith(".txt")]
     assert len(transcript_files) > 0
 
 
@@ -279,9 +260,7 @@ def test_generate_podcast_from_raw_text(sample_config, default_conversation_conf
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
-def test_generate_transcript_with_user_instructions(
-    sample_config, default_conversation_config
-):
+def test_generate_transcript_with_user_instructions(sample_config, default_conversation_config):
     """Test generating a transcript with specific user instructions in the conversation config."""
     url = "https://en.wikipedia.org/wiki/Artificial_intelligence"
 
@@ -324,12 +303,12 @@ def test_generate_transcript_with_user_instructions(
     with open(result, "r") as f:
         content = f.read()
 
-    assert (
-        conversation_config["podcast_name"].lower() in content.lower()
-    ), f"Expected to find podcast name '{conversation_config['podcast_name']}' in transcript"
-    assert (
-        conversation_config["podcast_tagline"].lower() in content.lower()
-    ), f"Expected to find podcast tagline '{conversation_config['podcast_tagline']}' in transcript"
+    assert conversation_config["podcast_name"].lower() in content.lower(), (
+        f"Expected to find podcast name '{conversation_config['podcast_name']}' in transcript"
+    )
+    assert conversation_config["podcast_tagline"].lower() in content.lower(), (
+        f"Expected to find podcast tagline '{conversation_config['podcast_tagline']}' in transcript"
+    )
 
 
 def test_generate_podcast_with_custom_llm(sample_config, default_conversation_config):
@@ -351,9 +330,7 @@ def test_generate_podcast_with_custom_llm(sample_config, default_conversation_co
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
-def test_generate_transcript_only_with_custom_llm(
-    sample_config, default_conversation_config
-):
+def test_generate_transcript_only_with_custom_llm(sample_config, default_conversation_config):
     """Test generating only a transcript with a custom LLM model."""
     urls = ["https://en.wikipedia.org/wiki/Artificial_intelligence"]
 
@@ -383,38 +360,31 @@ def test_generate_transcript_only_with_custom_llm(
 
     # Verify the content is substantial
     min_length = 500  # Minimum expected length in characters
-    assert (
-        len(content) > min_length
-    ), f"Content length ({len(content)}) is less than minimum expected ({min_length})"
+    assert len(content) > min_length, f"Content length ({len(content)}) is less than minimum expected ({min_length})"
 
 
 def test_generate_longform_transcript(sample_config, default_conversation_config):
     """Test generating a longform podcast transcript from a PDF file."""
     pdf_file = "tests/data/pdf/file.pdf"
-    
+
     # Generate transcript with longform=True
-    result = generate_podcast(
-        urls=[pdf_file],
-        config=sample_config,
-        transcript_only=True,
-        longform=True
-    )
+    result = generate_podcast(urls=[pdf_file], config=sample_config, transcript_only=True, longform=True)
 
     assert result is not None
     assert os.path.exists(result)
     assert result.endswith(".txt")
-    
+
     # Read and verify the content
     with open(result, "r") as f:
         content = f.read()
-    
+
     # Verify the content follows the Person1/Person2 format
     assert "<Person1>" in content
     assert "<Person2>" in content
-    
+
     # Verify it's a long-form transcript (>1000 characters)
     assert len(content) > 1000, f"Content length ({len(content)}) is less than minimum expected for longform (1000)"
-    
+
     # Verify multiple discussion rounds exist (characteristic of longform)
     person1_segments = content.count("<Person1>")
     assert person1_segments > 3, f"Expected more than 3 discussion rounds, got {person1_segments}"

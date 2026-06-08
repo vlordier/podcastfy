@@ -1,12 +1,12 @@
-import unittest
-from unittest.mock import patch, MagicMock
-import tempfile
 import os
-import pytest
-from podcastfy.content_generator import ContentGenerator
-from podcastfy.content_parser.pdf_extractor import PDFExtractor
-from podcastfy.content_parser.content_extractor import ContentExtractor
+import tempfile
+import unittest
 
+import pytest
+
+from podcastfy.content_generator import ContentGenerator
+from podcastfy.content_parser.content_extractor import ContentExtractor
+from podcastfy.content_parser.pdf_extractor import PDFExtractor
 
 MOCK_IMAGE_PATHS = [
     "https://raw.githubusercontent.com/souzatharsis/podcastfy/refs/heads/main/data/images/Senecio.jpeg",
@@ -44,27 +44,29 @@ class TestGenAIPodcast(unittest.TestCase):
         content_generator = ContentGenerator(model_name=MODEL_NAME, api_key_label=API_KEY_LABEL)
         input_text = "United States of America"
         result = content_generator.generate_qa_content(input_text)
-        self.assertIsNotNone(result)
-        self.assertNotEqual(result, "")
-        self.assertIsInstance(result, str)
+        assert result is not None
+        assert result != ""
+        assert isinstance(result, str)
 
     def test_custom_conversation_config(self):
         """
         Test the generation of content using a custom conversation configuration file.
         """
         conversation_config = sample_conversation_config()
-        content_generator = ContentGenerator(model_name=MODEL_NAME, api_key_label=API_KEY_LABEL, conversation_config=conversation_config)
+        content_generator = ContentGenerator(
+            model_name=MODEL_NAME, api_key_label=API_KEY_LABEL, conversation_config=conversation_config
+        )
         input_text = "United States of America"
 
         result = content_generator.generate_qa_content(input_text)
 
-        self.assertIsNotNone(result)
-        self.assertNotEqual(result, "")
-        self.assertIsInstance(result, str)
+        assert result is not None
+        assert result != ""
+        assert isinstance(result, str)
 
         # Check for elements from the custom config
-        self.assertIn(conversation_config["podcast_name"].lower(), result.lower())
-        self.assertIn(conversation_config["podcast_tagline"].lower(), result.lower())
+        assert conversation_config["podcast_name"].lower() in result.lower()
+        assert conversation_config["podcast_tagline"].lower() in result.lower()
 
     def test_generate_qa_content_from_images(self):
         """Test generating Q&A content from two input images."""
@@ -72,24 +74,22 @@ class TestGenAIPodcast(unittest.TestCase):
 
         content_generator = ContentGenerator(model_name=MODEL_NAME, api_key_label=API_KEY_LABEL)
 
-        with tempfile.NamedTemporaryFile(
-            mode="w+", suffix=".txt", delete=False
-        ) as temp_file:
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt", delete=False) as temp_file:
             result = content_generator.generate_qa_content(
                 input_texts="",  # Empty string for input_texts
                 image_file_paths=image_paths,
                 output_filepath=temp_file.name,
             )
 
-        self.assertIsNotNone(result)
-        self.assertNotEqual(result, "")
-        self.assertIsInstance(result, str)
+        assert result is not None
+        assert result != ""
+        assert isinstance(result, str)
 
         # Check if the output file was created and contains the same content
         with open(temp_file.name, "r") as f:
             file_content = f.read()
 
-        self.assertEqual(result, file_content)
+        assert result == file_content
 
         # Clean up the temporary file
         os.unlink(temp_file.name)
@@ -106,9 +106,9 @@ class TestGenAIPodcast(unittest.TestCase):
         # Generate Q&A content from the extracted text
         result = content_generator.generate_qa_content(input_texts=extracted_content)
 
-        self.assertIsNotNone(result)
-        self.assertNotEqual(result, "")
-        self.assertIsInstance(result, str)
+        assert result is not None
+        assert result != ""
+        assert isinstance(result, str)
 
     def test_generate_qa_content_from_raw_text(self):
         """Test generating Q&A content from raw input text."""
@@ -117,9 +117,9 @@ class TestGenAIPodcast(unittest.TestCase):
 
         result = content_generator.generate_qa_content(input_texts=raw_text)
 
-        self.assertIsNotNone(result)
-        self.assertNotEqual(result, "")
-        self.assertIsInstance(result, str)
+        assert result is not None
+        assert result != ""
+        assert isinstance(result, str)
 
     @unittest.skip("Too expensive to be auto tested on Github Actions")
     def test_generate_qa_content_from_topic(self):
@@ -134,20 +134,17 @@ class TestGenAIPodcast(unittest.TestCase):
 
         result = content_generator.generate_qa_content(input_texts=content)
 
-        self.assertIsNotNone(result)
-        self.assertNotEqual(result, "")
-        self.assertIsInstance(result, str)
+        assert result is not None
+        assert result != ""
+        assert isinstance(result, str)
 
         # Verify Q&A format
-        self.assertIn("<Person1>", result)
-        self.assertIn("<Person2>", result)
+        assert "<Person1>" in result
+        assert "<Person2>" in result
 
         # Verify content relevance
         lower_result = result.lower()
-        self.assertTrue(
-            any(term in lower_result for term in ["openai"]),
-            "Generated content should be relevant to the topic",
-        )
+        assert any(term in lower_result for term in ["openai"]), "Generated content should be relevant to the topic"
 
 
 if __name__ == "__main__":

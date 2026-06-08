@@ -5,21 +5,22 @@ This module provides REST endpoints for podcast generation and audio serving,
 with configuration management and temporary file handling.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Header, status
-from fastapi.responses import FileResponse
-import os
-import shutil
-import re
-import time
 import logging
-from pydantic import BaseModel, Field
-from ..client import generate_podcast
+import os
+import re
+import shutil
+import time
+
 import uvicorn
+from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 
-from podcastfy.utils.constants import MAX_URLS, TEMP_FILE_MAX_AGE_SECONDS, DEFAULT_PORT, TEMP_DIR_NAME
-from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
 from podcastfy.utils.config_conversation import ConversationConfigModel, load_conversation_config_model
+from podcastfy.utils.constants import DEFAULT_PORT, MAX_URLS, TEMP_DIR_NAME, TEMP_FILE_MAX_AGE_SECONDS
+from podcastfy.utils.enums import ApiKeyLabel
 
+from ..client import generate_podcast
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,6 @@ def load_base_config_model() -> ConversationConfigModel:
     try:
         return load_conversation_config_model()
     except Exception as e:
-        print(f"Warning: Could not load base config: {e}")
         return ConversationConfigModel()
 
 
@@ -48,10 +48,7 @@ async def verify_api_key(x_api_key: str | None = Header(None)):
     expected_key = os.getenv("PODCASTFY_API_KEY")
     if expected_key:
         if not x_api_key or x_api_key != expected_key:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid or missing API key"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or missing API key")
     return x_api_key
 
 
@@ -71,6 +68,7 @@ def cleanup_temp_files():
                 os.remove(fp)
             except OSError:
                 pass
+
 
 @app.post("/generate")
 def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_api_key)):
@@ -92,11 +90,11 @@ def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_
         # Build override dict from request fields
         update_dict = {}
         if data.creativity is not None:
-            update_dict['creativity'] = data.creativity
+            update_dict["creativity"] = data.creativity
         if data.user_instructions is not None:
-            update_dict['user_instructions'] = data.user_instructions
+            update_dict["user_instructions"] = data.user_instructions
         if data.tts_model is not None:
-            update_dict['default_tts_model'] = data.tts_model
+            update_dict["default_tts_model"] = data.tts_model
 
         # Apply overrides using Pydantic's model_copy
         conversation_config_model = base_model.model_copy(update=update_dict)
@@ -124,10 +122,11 @@ def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_
         logger.error(f"Podcast generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
 @app.get("/audio/{filename}")
 def serve_audio(filename: str):
-    """ Get File Audio From ther Server"""
-    if not re.match(r'^[\w\-\.]+\.mp3$', filename):
+    """Get File Audio From ther Server"""
+    if not re.match(r"^[\w\-\.]+\.mp3$", filename):
         raise HTTPException(status_code=400, detail="Invalid filename")
     resolved = os.path.normpath(os.path.join(TEMP_DIR, filename))
     if not resolved.startswith(os.path.normpath(TEMP_DIR)):
@@ -136,9 +135,11 @@ def serve_audio(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(resolved)
 
+
 @app.get("/health")
 def healthcheck():
     return {"status": "healthy"}
+
 
 if __name__ == "__main__":
     host = os.getenv("HOST", "127.0.0.1")

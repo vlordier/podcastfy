@@ -10,19 +10,20 @@ import io
 import logging
 import os
 import tempfile
+
 from pydub import AudioSegment
 
-from .tts.factory import TTSProviderFactory
-from .utils.config_conversation import load_conversation_config_model, TTSProviderConfig, ConversationConfigModel
-from .tts.base import QAPair
-from .utils.enums import TTSProvider, ApiKeyLabel
 from podcastfy.utils.constants import (
+    DEFAULT_BITRATE,
+    DEFAULT_CODEC,
     GEMINI_MULTI_TTS_MODEL,
     GEMINI_MULTI_VOICE1,
     GEMINI_MULTI_VOICE2,
-    DEFAULT_BITRATE,
-    DEFAULT_CODEC,
 )
+
+from .tts.factory import TTSProviderFactory
+from .utils.config_conversation import ConversationConfigModel, TTSProviderConfig, load_conversation_config_model
+from .utils.enums import ApiKeyLabel, TTSProvider
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 class TextToSpeech:
     def __init__(
         self,
-        model: str = None,
+        model: str | None = None,
         api_key: str | None = None,
         conversation_config: ConversationConfigModel | None = None,
     ):
@@ -52,9 +53,7 @@ class TextToSpeech:
             api_key = os.environ.get(api_key_label.value, None) if api_key_label else None
 
         # Initialize provider using factory
-        self.provider = TTSProviderFactory.create(
-            provider_name=model, api_key=api_key, model=model
-        )
+        self.provider = TTSProviderFactory.create(provider_name=model, api_key=api_key, model=model)
 
         # Setup directories and config
         self._setup_directories()
@@ -93,7 +92,6 @@ class TextToSpeech:
         cleaned_text = text
 
         try:
-
             if self.provider.multi_speaker:
                 audio_data = self.provider.generate_audio(
                     cleaned_text,
@@ -104,23 +102,17 @@ class TextToSpeech:
                 )
                 try:
                     if not audio_data:
-                        raise ValueError("No audio data produced")
+                        msg = "No audio data produced"
+                        raise ValueError(msg)
                     os.makedirs(os.path.dirname(output_file), exist_ok=True)
                     segment = AudioSegment.from_file(io.BytesIO(audio_data))
-                    segment.export(
-                        output_file,
-                        format=self.audio_format,
-                        codec=DEFAULT_CODEC,
-                        bitrate=DEFAULT_BITRATE
-                    )
+                    segment.export(output_file, format=self.audio_format, codec=DEFAULT_CODEC, bitrate=DEFAULT_BITRATE)
                 except Exception as e:
                     logger.error(f"Error during audio processing: {str(e)}")
                     raise
             else:
                 with tempfile.TemporaryDirectory(dir=self.temp_audio_dir) as temp_dir:
-                    audio_segments = self._generate_audio_segments(
-                        cleaned_text, temp_dir
-                    )
+                    audio_segments = self._generate_audio_segments(cleaned_text, temp_dir)
                     self._merge_audio_files(audio_segments, output_file)
                     logger.info(f"Audio saved to {output_file}")
 
@@ -130,17 +122,13 @@ class TextToSpeech:
 
     def _generate_audio_segments(self, text: str, temp_dir: str) -> list[str]:
         """Generate audio segments for each Q&A pair."""
-        qa_pairs = self.provider.split_qa(
-            text, self.ending_message, self.provider.get_supported_tags()
-        )
+        qa_pairs = self.provider.split_qa(text, self.ending_message, self.provider.get_supported_tags())
         audio_files = []
         provider_config = self._get_provider_config()
 
         for idx, (question, answer) in enumerate(qa_pairs, 1):
             for speaker_type, content in [("question", question), ("answer", answer)]:
-                temp_file = os.path.join(
-                    temp_dir, f"{idx}_{speaker_type}.{self.audio_format}"
-                )
+                temp_file = os.path.join(temp_dir, f"{idx}_{speaker_type}.{self.audio_format}")
                 voices = provider_config.default_voices or {}
                 voice = voices.get(speaker_type)
                 model = provider_config.model
@@ -215,4 +203,3 @@ class TextToSpeech:
         ]:
             if dir_path and not os.path.exists(dir_path):
                 os.makedirs(dir_path)
-    
