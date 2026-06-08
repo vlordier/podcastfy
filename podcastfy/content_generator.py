@@ -7,7 +7,6 @@ provides methods to generate and save the generated content.
 """
 
 import os
-from typing import Optional, Dict, List
 import re
 
 
@@ -31,9 +30,14 @@ from podcastfy.utils.constants import (
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MAX_NUM_CHUNKS,
     DEFAULT_MIN_CHUNK_SIZE,
+    LOCAL_LLM_PLACEHOLDER,
 )
 
 logger = logging.getLogger(__name__)
+
+_GREETING_TEMPLATE = "ALWAYS START THE CONVERSATION GREETING THE AUDIENCE: Welcome to {podcast_name} - {podcast_tagline}."
+_DEFAULT_CONVERSATION_PROMPT = "Please analyze this input and generate a conversation. {input_text}"
+_DEFAULT_IMAGE_DETAIL: str = "high"
 
 
 class PromptParams(BaseModel):
@@ -143,7 +147,7 @@ class LongFormContentGenerator:
         # Calculate chunk size that maximizes size while maintaining minimum chunks
         return input_length // (input_length // self.min_chunk_size)
 
-    def chunk_content(self, input_content: str, chunk_size: int) -> List[str]:
+    def chunk_content(self, input_content: str, chunk_size: int) -> list[str]:
         """
         Split input content into manageable chunks while preserving context.
         
@@ -172,10 +176,10 @@ class LongFormContentGenerator:
             chunks.append('. '.join(current_chunk) + '.')
         return chunks
 
-    def enhance_prompt_params(self, prompt_params: Dict, 
+    def enhance_prompt_params(self, prompt_params: dict, 
                               part_idx: int, 
                               total_parts: int,
-                              chat_context: str) -> Dict:
+                              chat_context: str) -> dict:
         """
         Enhance prompt parameters for long-form content generation.
         
@@ -206,8 +210,8 @@ class LongFormContentGenerator:
         # Add part-specific instructions
         if part_idx == 0:
             enhanced_params["instruction"] = f"""
-            ALWAYS START THE CONVERSATION GREETING THE AUDIENCE: Welcome to {enhanced_params["podcast_name"]} - {enhanced_params["podcast_tagline"]}.
-            You are generating the Introduction part of a long podcast conversation.
+{_GREETING_TEMPLATE.format(podcast_name=enhanced_params["podcast_name"], podcast_tagline=enhanced_params["podcast_tagline"])}
+You are generating the Introduction part of a long podcast conversation.
             Don't cover any topics yet, just introduce yourself and the topic. Leave the rest for later parts, following these guidelines:
             """
         elif part_idx == total_parts - 1:
@@ -228,14 +232,14 @@ class LongFormContentGenerator:
     def generate_long_form(
         self, 
         input_content: str, 
-        prompt_params: Dict
+        prompt_params: dict
     ) -> str:
         """
         Generate a complete long-form conversation using chunked content.
         
         Args:
             input_content (str): Input text for conversation
-            prompt_params (Dict): Base prompt parameters
+            prompt_params (dict): Base prompt parameters
             
         Returns:
             str: Generated long-form conversation
@@ -270,7 +274,7 @@ class LongFormContentGenerator:
 
         return self.stitch_conversations(conversation_parts)
     
-    def stitch_conversations(self, parts: List[str]) -> str:
+    def stitch_conversations(self, parts: list[str]) -> str:
         """
         Combine conversation parts with smooth transitions.
         
@@ -309,6 +313,7 @@ class ContentCleanerMixin:
             return cleaned_text.strip()
         except Exception as e:
             logger.error(f"Error cleaning scratchpad content: {str(e)}")
+            # Best-effort fallback: return original text on any error
             return text
 
     @staticmethod
@@ -328,12 +333,13 @@ class ContentCleanerMixin:
             )
         except Exception as e:
             logger.error(f"Error cleaning TSS markup: {str(e)}")
+            # Best-effort fallback: return original input on any error
             return input_text
 
 
 class ContentGenerationStrategy(ABC):
     @abstractmethod
-    def validate(self, input_texts: str, image_file_paths: List[str]) -> None:
+    def validate(self, input_texts: str, image_file_paths: list[str]) -> None:
         pass
         
     @abstractmethod
@@ -353,8 +359,8 @@ class ContentGenerationStrategy(ABC):
     @abstractmethod
     def compose_prompt_params(self,
                             config_conversation: ConversationConfigModel,
-                            image_file_paths: Optional[List[str]] = None,
-                            image_path_keys: Optional[List[str]] = None,
+                            image_file_paths: list[str] | None = None,
+                            image_path_keys: list[str] | None = None,
                             input_texts: str = "") -> PromptParams:
         pass
 
@@ -366,7 +372,7 @@ class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
         self.content_generator_config = content_generator_config
         self.config_conversation = config_conversation
     
-    def validate(self, input_texts: str, image_file_paths: List[str]) -> None:
+    def validate(self, input_texts: str, image_file_paths: list[str]) -> None:
         pass
         
     def generate(self, 
@@ -383,8 +389,8 @@ class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
 
     def compose_prompt_params(self,
                             config_conversation: ConversationConfigModel,
-                            image_file_paths: Optional[List[str]] = None,
-                            image_path_keys: Optional[List[str]] = None,
+                            image_file_paths: list[str] | None = None,
+                            image_path_keys: list[str] | None = None,
                             input_texts: str = "") -> PromptParams:
         if image_file_paths is None:
             image_file_paths = []
@@ -412,7 +418,7 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
         self.content_generator_config = content_generator_config
         self.config_conversation = config_conversation
     
-    def validate(self, input_texts: str, image_file_paths: List[str]) -> None:
+    def validate(self, input_texts: str, image_file_paths: list[str]) -> None:
         if not input_texts.strip():
             raise ValueError("Long-form generation requires non-empty input text")
         if image_file_paths:
@@ -480,12 +486,13 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
             
         except Exception as e:
             logger.error(f"Error fixing alternating tags: {str(e)}")
+            # Best-effort fallback: return original transcript on any error
             return transcript
 
     def compose_prompt_params(self,
                             config_conversation: ConversationConfigModel,
-                            image_file_paths: Optional[List[str]] = None,
-                            image_path_keys: Optional[List[str]] = None,
+                            image_file_paths: list[str] | None = None,
+                            image_path_keys: list[str] | None = None,
                             input_texts: str = "") -> PromptParams:
         if image_file_paths is None:
             image_file_paths = []
@@ -509,7 +516,7 @@ class ContentGenerator:
         is_local: bool=False, 
         model_name: str=DEFAULT_GEMINI_LLM, 
         api_key_label: str=ApiKeyLabel.GEMINI,
-        conversation_config: Optional[ConversationConfigModel] = None
+        conversation_config: ConversationConfigModel | None = None
     ):
         self.app_config = load_app_config_model()
         self.content_generator_config = self.app_config.content_generator
@@ -531,7 +538,7 @@ class ContentGenerator:
         if not model_name:
             model_name = self.app_config.content_generator.llm_model
         if is_local:
-            model_name = "User provided local model"
+            model_name = LOCAL_LLM_PLACEHOLDER
 
         llm_backend = LLMBackend(
             is_local=is_local,
@@ -580,14 +587,14 @@ class ContentGenerator:
         # Only add text content if input_text is not empty
         text_content = {
             "type": "text",
-            "text": "Please analyze this input and generate a conversation. {input_text}",
+            "text": _DEFAULT_CONVERSATION_PROMPT,
         }
         messages.append(text_content)
 
         for i in range(num_images):
             key = f"image_path_{i}"
             image_content = {
-                "image_url": {"url": f"{{{key}}}", "detail": "high"},
+                "image_url": {"url": f"{{{key}}}", "detail": _DEFAULT_IMAGE_DETAIL},
                 "type": "image_url",
             }
             image_path_keys.append(key)
@@ -622,8 +629,8 @@ class ContentGenerator:
     def generate_qa_content(
         self,
         input_texts: str = "",
-        image_file_paths: Optional[List[str]] = None,
-        output_filepath: Optional[str] = None,
+        image_file_paths: list[str] | None = None,
+        output_filepath: str | None = None,
         longform: bool = False
     ) -> str:
         """

@@ -1,6 +1,6 @@
 """Factory for creating TTS providers."""
 
-from typing import Dict, Type, Optional
+from typing import Type
 from .base import TTSProvider
 from .providers.elevenlabs import ElevenLabsTTS
 from .providers.openai import OpenAITTS
@@ -13,7 +13,7 @@ from podcastfy.utils.enums import TTSProvider as TTSProviderEnum
 class TTSProviderFactory:
     """Factory class for creating TTS providers."""
     
-    _providers: Dict[TTSProviderEnum, Type[TTSProvider]] = {
+    _providers: dict[TTSProviderEnum, Type[TTSProvider]] = {
         TTSProviderEnum.ELEVENLABS: ElevenLabsTTS,
         TTSProviderEnum.OPENAI: OpenAITTS,
         TTSProviderEnum.EDGE: EdgeTTS,
@@ -22,7 +22,7 @@ class TTSProviderFactory:
     }
     
     @classmethod
-    def create(cls, provider_name: str, api_key: Optional[str] = None, model: Optional[str] = None) -> TTSProvider:
+    def create(cls, provider_name: str, api_key: str | None = None, model: str | None = None) -> TTSProvider:
         """
         Create a TTS provider instance.
         

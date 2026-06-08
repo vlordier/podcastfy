@@ -1,7 +1,6 @@
 """Abstract base class for LLM providers."""
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class LLMProvider(ABC):
@@ -9,7 +8,7 @@ class LLMProvider(ABC):
     def generate(
         self,
         prompt: str,
-        images: Optional[list[str]] = None,
-        config_conversation: Optional[dict] = None,
+        images: list[str] | None = None,
+        config_conversation: dict | None = None,
     ) -> str:
         ...

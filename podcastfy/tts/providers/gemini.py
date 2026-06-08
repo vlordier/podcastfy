@@ -1,7 +1,6 @@
 """Google Cloud Text-to-Speech provider implementation for single speaker."""
 
 from google.cloud import texttospeech_v1
-from typing import List
 from ..base import TTSProvider
 import logging
 from podcastfy.utils.constants import GEMINI_TTS_VOICE, COMMON_SSML_TAGS
@@ -79,7 +78,7 @@ class GeminiTTS(TTSProvider):
             logger.error(f"Failed to generate audio: {str(e)}")
             raise RuntimeError(f"Failed to generate audio: {str(e)}") from e
     
-    def get_supported_tags(self) -> List[str]:
+    def get_supported_tags(self) -> list[str]:
         """Get supported SSML tags."""
         return list(COMMON_SSML_TAGS)
 

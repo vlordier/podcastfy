@@ -1,6 +1,5 @@
 """Gemini LLM provider implementation."""
 import os
-from typing import Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -31,8 +30,8 @@ class GeminiLLM(LLMProvider):
     def generate(
         self,
         prompt: str,
-        images: Optional[list[str]] = None,
-        config_conversation: Optional[dict] = None,
+        images: list[str] | None = None,
+        config_conversation: dict | None = None,
     ) -> str:
         prompt_template = ChatPromptTemplate.from_messages([
             ("human", prompt),

@@ -5,9 +5,8 @@ import os
 import tempfile
 import nest_asyncio
 import asyncio
-from typing import List
 from ..base import TTSProvider
-from podcastfy.utils.constants import COMMON_SSML_TAGS
+from podcastfy.utils.constants import COMMON_SSML_TAGS, EDGE_DEFAULT_MODEL
 
 class EdgeTTS(TTSProvider):
     def __init__(self, api_key: str = None, model: str = None) -> None:
@@ -18,7 +17,7 @@ class EdgeTTS(TTSProvider):
             api_key (str): Not used for Edge TTS
             model (str): Model name to use
         """
-        self.model = model or "default"  # Edge TTS doesn't use models, but we set it for consistency
+        self.model = model or EDGE_DEFAULT_MODEL  # Edge TTS doesn't use models, but we set it for consistency
         self._api_key = api_key  # unused, kept for interface compatibility
 
     def generate_audio(self, text: str, voice: str, model: str, voice2: str = None) -> bytes:
@@ -48,6 +47,6 @@ class EdgeTTS(TTSProvider):
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(_generate())
         
-    def get_supported_tags(self) -> List[str]:
+    def get_supported_tags(self) -> list[str]:
         """Get supported SSML tags."""
         return list(COMMON_SSML_TAGS)

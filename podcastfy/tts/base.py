@@ -1,7 +1,7 @@
 """Abstract base class for Text-to-Speech providers."""
 
 from abc import ABC, abstractmethod
-from typing import List, ClassVar, Tuple, NamedTuple, Optional
+from typing import ClassVar, NamedTuple
 import re
 
 from podcastfy.utils.enums import SpeakerTag
@@ -35,7 +35,7 @@ class TTSProvider(ABC):
         """
         pass
 
-    def get_supported_tags(self) -> List[str]:
+    def get_supported_tags(self) -> list[str]:
         """
         Get set of SSML tags supported by this provider.
         
@@ -58,7 +58,7 @@ class TTSProvider(ABC):
         if not model:
             raise ValueError("Model must be specified")
         
-    def split_qa(self, input_text: str, ending_message: str, supported_tags: List[str] = None) -> List[QAPair]:
+    def split_qa(self, input_text: str, ending_message: str, supported_tags: list[str] = None) -> list[QAPair]:
         """
         Split the input text into question-answer pairs.
 
@@ -92,7 +92,7 @@ class TTSProvider(ABC):
         ]
         return processed_matches
 
-    def clean_tss_markup(self, input_text: str, additional_tags: Optional[List[SpeakerTag]] = None, supported_tags: Optional[List[str]] = None) -> str:
+    def clean_tss_markup(self, input_text: str, additional_tags: list[SpeakerTag] | None = None, supported_tags: list[str] | None = None) -> str:
         """
         Remove unsupported TSS markup tags from the input text while preserving supported SSML tags.
 

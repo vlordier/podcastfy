@@ -1,9 +1,13 @@
 import os
 import pytest
 from podcastfy.api.fast_app import app
-from fastapi.testclient import TestClient
 
-client = TestClient(app)
+
+@pytest.fixture(scope="module")
+def client():
+    from fastapi.testclient import TestClient
+    return TestClient(app)
+
 
 @pytest.fixture
 def sample_config():
@@ -25,13 +29,13 @@ def sample_config():
     }
 
 @pytest.mark.skip(reason="Trying to understand if other tests are passing")
-def test_generate_podcast_with_edge_tts(sample_config):
+def test_generate_podcast_with_edge_tts(sample_config, client):
     response = client.post("/generate", json=sample_config)
     assert response.status_code == 200
     assert "audioUrl" in response.json()
     assert response.json()["audioUrl"].startswith("http://testserver")
 
-def test_healthcheck():
+def test_healthcheck(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}

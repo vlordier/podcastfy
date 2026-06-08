@@ -15,7 +15,6 @@ from podcastfy.utils.config import load_app_config_model
 from podcastfy.content_parser.pdf_extractor import PDFExtractor
 from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
 from .extractor_base import ContentExtractor as ContentExtractorABC
-from typing import List
 from playwright.sync_api import sync_playwright
 from podcastfy.utils.constants import DEFAULT_TIMEOUT_SECONDS, POST_NAVIGATION_WAIT_MS
 

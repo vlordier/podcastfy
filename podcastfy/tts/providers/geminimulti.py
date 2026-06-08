@@ -1,7 +1,7 @@
 """Google Cloud Text-to-Speech provider implementation."""
 
 from google.cloud import texttospeech_v1
-from typing import List, ClassVar
+from typing import ClassVar
 from ..base import TTSProvider
 import re
 import logging
@@ -45,7 +45,7 @@ class GeminiMultiTTS(TTSProvider):
             logger.error(f"Failed to initialize GeminiMultiTTS client: {str(e)}")
             raise
             
-    def chunk_text(self, text: str, max_bytes: int = DEFAULT_CHUNK_BYTES) -> List[str]:
+    def chunk_text(self, text: str, max_bytes: int = DEFAULT_CHUNK_BYTES) -> list[str]:
         """
         Split text into chunks that fit within Google TTS byte limit while preserving speaker tags.
         
@@ -97,7 +97,7 @@ class GeminiMultiTTS(TTSProvider):
         logger.info(f"Created {len(chunks)} chunks from input text")
         return chunks
 
-    def split_turn_text(self, text: str, max_chars: int = DEFAULT_TURN_CHARS) -> List[str]:
+    def split_turn_text(self, text: str, max_chars: int = DEFAULT_TURN_CHARS) -> list[str]:
         """
         Split turn text into smaller chunks at sentence boundaries.
         
@@ -144,7 +144,7 @@ class GeminiMultiTTS(TTSProvider):
             
         return chunks
 
-    def merge_audio(self, audio_chunks: List[bytes]) -> bytes:
+    def merge_audio(self, audio_chunks: list[bytes]) -> bytes:
         """
         Merge multiple MP3 audio chunks into a single audio file.
         
@@ -311,7 +311,7 @@ class GeminiMultiTTS(TTSProvider):
             logger.error(f"Failed to generate audio: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to generate audio: {str(e)}") from e
     
-    def get_supported_tags(self) -> List[str]:
+    def get_supported_tags(self) -> list[str]:
         """Get supported SSML tags."""
         return list(COMMON_SSML_TAGS)
         

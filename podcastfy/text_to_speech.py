@@ -10,7 +10,6 @@ import io
 import logging
 import os
 import tempfile
-from typing import List, Tuple, Optional, Dict, Any
 from pydub import AudioSegment
 
 from .tts.factory import TTSProviderFactory
@@ -32,8 +31,8 @@ class TextToSpeech:
     def __init__(
         self,
         model: str = None,
-        api_key: Optional[str] = None,
-        conversation_config: Optional[ConversationConfigModel] = None,
+        api_key: str | None = None,
+        conversation_config: ConversationConfigModel | None = None,
     ):
         if isinstance(conversation_config, ConversationConfigModel):
             self.conversation_config = conversation_config
@@ -129,7 +128,7 @@ class TextToSpeech:
             logger.error(f"Error converting text to speech: {str(e)}")
             raise
 
-    def _generate_audio_segments(self, text: str, temp_dir: str) -> List[str]:
+    def _generate_audio_segments(self, text: str, temp_dir: str) -> list[str]:
         """Generate audio segments for each Q&A pair."""
         qa_pairs = self.provider.split_qa(
             text, self.ending_message, self.provider.get_supported_tags()
@@ -153,7 +152,7 @@ class TextToSpeech:
 
         return audio_files
 
-    def _merge_audio_files(self, audio_files: List[str], output_file: str) -> None:
+    def _merge_audio_files(self, audio_files: list[str], output_file: str) -> None:
         """
         Merge the provided audio files sequentially, ensuring questions come before answers.
 
@@ -163,7 +162,7 @@ class TextToSpeech:
         """
         try:
 
-            def get_sort_key(file_path: str) -> Tuple[int, int]:
+            def get_sort_key(file_path: str) -> tuple[int, int]:
                 """
                 Create sort key from filename that puts questions before answers.
                 Example filenames: "1_question.mp3", "1_answer.mp3"

@@ -1,6 +1,5 @@
 """Llamafile LLM provider implementation."""
 
-from typing import Optional
 from langchain_community.llms.llamafile import Llamafile
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -15,8 +14,8 @@ class LlamafileLLM(LLMProvider):
     def generate(
         self,
         prompt: str,
-        images: Optional[list[str]] = None,
-        config_conversation: Optional[dict] = None,
+        images: list[str] | None = None,
+        config_conversation: dict | None = None,
     ) -> str:
         prompt_template = ChatPromptTemplate.from_messages([
             ("human", prompt),

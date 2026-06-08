@@ -1,14 +1,13 @@
 """OpenAI TTS provider implementation."""
 
 import openai
-from typing import List, Optional
 from ..base import TTSProvider
 from podcastfy.utils.constants import OPENAI_TTS_MODEL, COMMON_SSML_TAGS
 
 class OpenAITTS(TTSProvider):
     """OpenAI Text-to-Speech provider."""
     
-    def __init__(self, api_key: Optional[str] = None, model: str = OPENAI_TTS_MODEL):
+    def __init__(self, api_key: str | None = None, model: str = OPENAI_TTS_MODEL):
         """
         Initialize OpenAI TTS provider.
         
@@ -22,7 +21,7 @@ class OpenAITTS(TTSProvider):
             raise ValueError("OpenAI API key must be provided or set in environment")
         self.model = model
             
-    def get_supported_tags(self) -> List[str]:
+    def get_supported_tags(self) -> list[str]:
         """Get all supported SSML tags including provider-specific ones."""
         return COMMON_SSML_TAGS + ['break', 'emphasis']
         

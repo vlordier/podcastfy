@@ -1,7 +1,6 @@
 import os
 import pytest
 import tempfile
-import yaml
 from podcastfy.client import generate_podcast
 from podcastfy.utils.config import get_config_path
 from podcastfy.utils.config_conversation import load_conversation_config_model

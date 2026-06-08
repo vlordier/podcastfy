@@ -7,7 +7,7 @@ for the Podcastfy application. It uses a YAML file for conversation-specific con
 
 import os
 import sys
-from typing import Any, Dict, Optional, Union
+from typing import Any
 import yaml
 
 from pydantic import BaseModel, Field, field_validator
@@ -19,7 +19,7 @@ from podcastfy.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-def get_conversation_config_path(config_file: str = 'conversation_config.yaml') -> Optional[str]:
+def get_conversation_config_path(config_file: str = 'conversation_config.yaml') -> str | None:
 	"""
 	Get the path to the conversation_config.yaml file.
 	
@@ -102,7 +102,7 @@ class ConversationConfigModel(BaseModel):
         return v
 
 
-def load_conversation_config_model(config_data: Optional[Union[str, Dict[str, Any]]] = None) -> ConversationConfigModel:
+def load_conversation_config_model(config_data: str | dict[str, Any] | None = None) -> ConversationConfigModel:
 	if config_data is None:
 		config_path = get_conversation_config_path()
 		if config_path:

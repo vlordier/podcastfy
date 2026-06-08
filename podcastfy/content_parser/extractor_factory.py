@@ -1,6 +1,6 @@
 """Factory for creating content extractors."""
 
-from typing import ClassVar, Optional, Type
+from typing import ClassVar, Type
 from .extractor_base import ContentExtractor
 
 
@@ -12,7 +12,7 @@ class ExtractorFactory:
         cls._extractors.append(extractor_cls)
 
     @classmethod
-    def create(cls, source: str) -> Optional[ContentExtractor]:
+    def create(cls, source: str) -> ContentExtractor | None:
         for ex_cls in cls._extractors:
             if ex_cls.can_handle(source):
                 return ex_cls()

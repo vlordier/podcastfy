@@ -1,6 +1,6 @@
 """Factory for creating LLM providers."""
 
-from typing import ClassVar, Optional, Type
+from typing import ClassVar, Type
 from .base import LLMProvider
 from .providers.gemini import GeminiLLM
 from .providers.litellm import LiteLLM

@@ -7,7 +7,6 @@ extraction, delegating to specialized extractors based on the source type.
 """
 
 import logging
-from typing import List
 from .youtube_transcriber import YouTubeTranscriber
 from .website_extractor import WebsiteExtractor
 from .pdf_extractor import PDFExtractor

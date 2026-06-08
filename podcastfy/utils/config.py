@@ -6,14 +6,14 @@ It uses a YAML file for non-sensitive configuration settings.
 """
 
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 import yaml
 from pydantic import BaseModel, Field
 
 from podcastfy.utils.constants import DEFAULT_GEMINI_LLM, DEFAULT_MAX_OUTPUT_TOKENS, MIN_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS, DEFAULT_TIMEOUT_SECONDS
 
 
-def get_config_path(config_file: str = 'config.yaml') -> Optional[str]:
+def get_config_path(config_file: str = 'config.yaml') -> str | None:
 	"""
 	Get the path to the config.yaml file.
 	
@@ -85,7 +85,7 @@ class AppConfigModel(BaseModel):
     website_extractor: WebsiteExtractorConfigModel = Field(default_factory=WebsiteExtractorConfigModel)
     youtube_transcriber: YouTubeTranscriberConfigModel = Field(default_factory=YouTubeTranscriberConfigModel)
     logging: LoggingConfigModel = Field(default_factory=LoggingConfigModel)
-    main: Optional[Dict[str, Any]] = None
+    main: dict[str, Any] | None = None
 
 
 def load_app_config_model() -> AppConfigModel:

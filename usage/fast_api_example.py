@@ -10,10 +10,10 @@ import aiohttp
 import json
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 
-def get_default_config() -> Dict[str, Any]:
+def get_default_config() -> dict[str, Any]:
 	"""
 	Returns default configuration for podcast generation.
 
@@ -68,7 +68,7 @@ async def generate_podcast() -> None:
 			print(f"Unexpected error: {str(e)}")
 
 
-async def download_podcast(session: aiohttp.ClientSession, result: Dict[str, str]) -> None:
+async def download_podcast(session: aiohttp.ClientSession, result: dict[str, str]) -> None:
 	"""
 	Downloads the generated podcast file.
 

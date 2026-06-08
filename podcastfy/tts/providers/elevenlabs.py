@@ -2,7 +2,6 @@
 
 from elevenlabs import client as elevenlabs_client
 from ..base import TTSProvider
-from typing import List
 from podcastfy.utils.constants import ELEVENLABS_TTS_MODEL
 
 class ElevenLabsTTS(TTSProvider):
@@ -26,6 +25,6 @@ class ElevenLabsTTS(TTSProvider):
         )
         return b''.join(chunk for chunk in audio if chunk)
         
-    def get_supported_tags(self) -> List[str]:
+    def get_supported_tags(self) -> list[str]:
         """Get supported SSML tags."""
         return super().get_supported_tags() 

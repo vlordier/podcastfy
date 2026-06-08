@@ -12,7 +12,6 @@ import shutil
 import re
 import time
 import logging
-from typing import Optional, List
 from pydantic import BaseModel, Field
 from ..client import generate_podcast
 import uvicorn
@@ -34,18 +33,18 @@ def load_base_config_model() -> ConversationConfigModel:
 
 
 class GenerateRequest(BaseModel):
-    urls: List[str] = Field(default_factory=list, max_length=MAX_URLS)
-    tts_model: Optional[str] = Field(default=None, pattern=r"^(openai|elevenlabs|edge|gemini|geminimulti)?$")
-    user_instructions: Optional[str] = None
-    creativity: Optional[float] = Field(default=None, ge=0, le=2)
-    openai_key: Optional[str] = None
-    google_key: Optional[str] = None
-    elevenlabs_key: Optional[str] = None
+    urls: list[str] = Field(default_factory=list, max_length=MAX_URLS)
+    tts_model: str | None = Field(default=None, pattern=r"^(openai|elevenlabs|edge|gemini|geminimulti)?$")
+    user_instructions: str | None = None
+    creativity: float | None = Field(default=None, ge=0, le=2)
+    openai_key: str | None = None
+    google_key: str | None = None
+    elevenlabs_key: str | None = None
     is_long_form: bool = False
-    conversation_config: Optional[dict] = None
+    conversation_config: dict | None = None
 
 
-async def verify_api_key(x_api_key: Optional[str] = Header(None)):
+async def verify_api_key(x_api_key: str | None = Header(None)):
     expected_key = os.getenv("PODCASTFY_API_KEY")
     if expected_key:
         if not x_api_key or x_api_key != expected_key:
@@ -105,13 +104,10 @@ def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_
         # Determine TTS model for direct argument
         tts_model = data.tts_model or conversation_config_model.default_tts_model
 
-        # Convert to dict for downstream compatibility
-        conversation_config = conversation_config_model.model_dump()
-
         # Generate podcast
         result = generate_podcast(
             urls=data.urls,
-            conversation_config=conversation_config,
+            conversation_config=conversation_config_model,
             tts_model=tts_model,
             longform=data.is_long_form,
         )

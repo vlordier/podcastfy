@@ -17,6 +17,7 @@ GEMINI_MULTI_TTS_MODEL: str = "en-US-Studio-MultiSpeaker"
 GEMINI_MULTI_VOICE1: str = "R"
 GEMINI_MULTI_VOICE2: str = "S"
 GEMINI_MULTI_LANGUAGE: str = "en-US"
+EDGE_DEFAULT_MODEL: str = "default"
 
 # --- LLM defaults ---
 DEFAULT_GEMINI_LLM: str = "gemini-2.5-flash"
@@ -46,6 +47,9 @@ TEMP_DIR_NAME: str = "temp_audio"
 
 # --- SSML ---
 COMMON_SSML_TAGS: list[str] = ["lang", "p", "phoneme", "s", "sub"]
+
+# --- LLM placeholders ---
+LOCAL_LLM_PLACEHOLDER: str = "local"
 
 # --- Other ---
 PREVIEW_CHARS: int = 500

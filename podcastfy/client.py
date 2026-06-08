@@ -17,7 +17,7 @@ from podcastfy.utils.config_conversation import load_conversation_config_model, 
 from podcastfy.utils.logger import setup_logger
 from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
 from podcastfy.utils.constants import DEFAULT_TRANSCRIPTS_DIR, DEFAULT_AUDIO_DIR
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 import logging
 
@@ -31,18 +31,18 @@ os.environ.setdefault("LANGCHAIN_TRACING_V2", "False")
 
 
 def process_content(
-    urls: Optional[List[str]] = None,
-    transcript_file: Optional[str] = None,
-    tts_model: Optional[str] = None,
+    urls: list[str] | None = None,
+    transcript_file: str | None = None,
+    tts_model: str | None = None,
     generate_audio: bool = True,
-    config: Optional[Dict[str, Any]] = None,
-    conversation_config: Optional[Dict[str, Any]] = None,
-    image_paths: Optional[List[str]] = None,
+    config: dict[str, Any] | None = None,
+    conversation_config: dict[str, Any] | None = None,
+    image_paths: list[str] | None = None,
     is_local: bool = False,
-    text: Optional[str] = None,
-    model_name: Optional[str] = None,
-    api_key_label: Optional[str] = None,
-    topic: Optional[str] = None,
+    text: str | None = None,
+    model_name: str | None = None,
+    api_key_label: str | None = None,
+    topic: str | None = None,
     longform: bool = False
 ):
     """
@@ -186,7 +186,7 @@ def main(
         "-cc",
         help="Path to custom conversation configuration YAML file",
     ),
-    image_paths: List[str] = typer.Option(
+    image_paths: list[str] = typer.Option(
         None, "--image", "-i", help="Paths to image files to process"
     ),
     is_local: bool = typer.Option(
@@ -224,8 +224,7 @@ def main(
         conversation_config = None
         # Load conversation config if provided
         if conversation_config_path:
-            with open(conversation_config_path, "r") as f:
-                conversation_config: Dict[str, Any] | None = yaml.safe_load(f)
+            conversation_config = load_conversation_config_model(conversation_config_path)
 
         # Use default TTS model from conversation config if not specified
         if tts_model is None:
@@ -292,21 +291,21 @@ if __name__ == "__main__":
 
 
 def generate_podcast(
-    urls: Optional[List[str]] = None,
-    url_file: Optional[str] = None,
-    transcript_file: Optional[str] = None,
-    tts_model: Optional[str] = None,
+    urls: list[str] | None = None,
+    url_file: str | None = None,
+    transcript_file: str | None = None,
+    tts_model: str | None = None,
     transcript_only: bool = False,
-    config: Optional[Dict[str, Any]] = None,
-    conversation_config: Optional[Dict[str, Any]] = None,
-    image_paths: Optional[List[str]] = None,
+    config: dict[str, Any] | None = None,
+    conversation_config: dict[str, Any] | None = None,
+    image_paths: list[str] | None = None,
     is_local: bool = False,
-    text: Optional[str] = None,
-    llm_model_name: Optional[str] = None,
-    api_key_label: Optional[str] = None,
-    topic: Optional[str] = None,
+    text: str | None = None,
+    llm_model_name: str | None = None,
+    api_key_label: str | None = None,
+    topic: str | None = None,
     longform: bool = False,
-) -> Optional[str]:
+) -> str | None:
     """
     Generate a podcast or transcript from a list of URLs, a file containing URLs, a transcript file, or image files.
 
