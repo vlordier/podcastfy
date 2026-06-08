@@ -10,6 +10,7 @@ from podcastfy.utils.constants import (
     DEFAULT_FREQUENCY_PENALTY,
     DEFAULT_MAX_OUTPUT_TOKENS,
 )
+from podcastfy.utils.enums import ApiKeyLabel
 
 
 class GeminiLLM(LLMProvider):
@@ -21,7 +22,7 @@ class GeminiLLM(LLMProvider):
             "frequency_penalty": DEFAULT_FREQUENCY_PENALTY,
         }
         self.llm = ChatGoogleGenerativeAI(
-            api_key=api_key or os.environ.get("GEMINI_API_KEY", ""),
+            api_key=api_key or os.environ.get(ApiKeyLabel.GEMINI.value, ""),
             model=model,
             max_output_tokens=kwargs.get("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS),
             **common_params,

@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 import yaml
 from pydantic import BaseModel, Field
 
-from podcastfy.utils.constants import DEFAULT_GEMINI_LLM, DEFAULT_MAX_OUTPUT_TOKENS, MIN_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS
+from podcastfy.utils.constants import DEFAULT_GEMINI_LLM, DEFAULT_MAX_OUTPUT_TOKENS, MIN_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS, DEFAULT_TIMEOUT_SECONDS
 
 
 def get_config_path(config_file: str = 'config.yaml') -> Optional[str]:
@@ -67,9 +67,29 @@ class ContentExtractorConfigModel(BaseModel):
     youtube_url_patterns: list[str] = Field(default_factory=lambda: ["youtube.com", "youtu.be"])
 
 
+class WebsiteExtractorConfigModel(BaseModel):
+    jina_api_url: str = "https://r.jina.ai"
+    markdown_cleaning: dict = Field(default_factory=lambda: {"remove_patterns": []})
+    unwanted_tags: list[str] = Field(default_factory=lambda: ["script", "style", "nav", "footer", "header", "aside", "noscript"])
+    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    timeout: int = DEFAULT_TIMEOUT_SECONDS
+
+
+class YouTubeTranscriberConfigModel(BaseModel):
+    remove_phrases: list[str] = Field(default_factory=lambda: ["[music]"])
+
+
+class LoggingConfigModel(BaseModel):
+    level: str = "INFO"
+    format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+
 class AppConfigModel(BaseModel):
     content_generator: ContentGeneratorConfigModel = Field(default_factory=ContentGeneratorConfigModel)
     content_extractor: ContentExtractorConfigModel = Field(default_factory=ContentExtractorConfigModel)
+    website_extractor: WebsiteExtractorConfigModel = Field(default_factory=WebsiteExtractorConfigModel)
+    youtube_transcriber: YouTubeTranscriberConfigModel = Field(default_factory=YouTubeTranscriberConfigModel)
+    logging: LoggingConfigModel = Field(default_factory=LoggingConfigModel)
     main: Optional[Dict[str, Any]] = None
 
 
@@ -77,8 +97,14 @@ def load_app_config_model() -> AppConfigModel:
     raw = _load_yaml_config()
     cg_raw = raw.get("content_generator", {})
     ce_raw = raw.get("content_extractor", {})
+    we_raw = raw.get("website_extractor", {})
+    yt_raw = raw.get("youtube_transcriber", {})
+    log_raw = raw.get("logging", {})
     return AppConfigModel(
         content_generator=ContentGeneratorConfigModel(**cg_raw),
         content_extractor=ContentExtractorConfigModel(**ce_raw),
+        website_extractor=WebsiteExtractorConfigModel(**we_raw),
+        youtube_transcriber=YouTubeTranscriberConfigModel(**yt_raw),
+        logging=LoggingConfigModel(**log_raw),
         main=raw.get("main"),
     )

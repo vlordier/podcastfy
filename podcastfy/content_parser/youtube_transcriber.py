@@ -8,8 +8,7 @@ to clean and format the extracted text.
 
 from youtube_transcript_api import YouTubeTranscriptApi
 import logging
-import yaml
-from podcastfy.utils.config import get_config_path
+from podcastfy.utils.config import load_app_config_model
 
 from .extractor_base import ContentExtractor as ContentExtractorABC
 
@@ -26,12 +25,8 @@ class YouTubeTranscriber(ContentExtractorABC):
 		return self.extract_transcript(source)
 
 	def __init__(self):
-		config_path = get_config_path()
-		raw_config = {}
-		if config_path:
-			with open(config_path, 'r') as f:
-				raw_config = yaml.safe_load(f)
-		self.youtube_transcriber_config = raw_config.get('youtube_transcriber')
+		app_config = load_app_config_model()
+		self.remove_phrases = app_config.youtube_transcriber.remove_phrases
 
 	def extract_transcript(self, url: str) -> str:
 		"""
@@ -48,38 +43,9 @@ class YouTubeTranscriber(ContentExtractorABC):
 			transcript = YouTubeTranscriptApi.get_transcript(video_id)
 			cleaned_transcript = " ".join([
 				entry['text'] for entry in transcript 
-				if entry['text'].lower() not in self.youtube_transcriber_config['remove_phrases']
+				if entry['text'].lower() not in self.remove_phrases
 			])
 			return cleaned_transcript
 		except Exception as e:
 			logger.error(f"Error extracting YouTube transcript: {str(e)}")
 			raise
-
-def main(seed: int = 42) -> None:
-	"""
-	Test the YouTubeTranscriber class with a specific URL and save the transcript.
-
-	Args:
-		seed (int): Random seed for reproducibility. Defaults to 42.
-	"""
-	url = "https://www.youtube.com/watch?v=nFbJCoTK0_g"
-	transcriber = YouTubeTranscriber()
-
-	try:
-		transcript = transcriber.extract_transcript(url)
-		print("Transcript extracted successfully.")
-		
-		# Save transcript to file
-		output_file = 'tests/data/transcripts/youtube_transcript2.txt'
-		with open(output_file, 'w') as file:
-			file.write(transcript)
-		
-		print(f"Transcript saved to {output_file}")
-		print("First 500 characters of the transcript:")
-		print(transcript[:500] + "..." if len(transcript) > 500 else transcript)
-	except Exception as e:
-		logger.error(f"An error occurred: {str(e)}")
-		raise
-
-if __name__ == "__main__":
-	main()

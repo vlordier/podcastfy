@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 import tempfile
 import os
+import pytest
 from podcastfy.content_generator import ContentGenerator
 from podcastfy.content_parser.pdf_extractor import PDFExtractor
 from podcastfy.content_parser.content_extractor import ContentExtractor
@@ -16,7 +17,7 @@ MODEL_NAME = "gemini-2.5-flash"
 API_KEY_LABEL = "GEMINI_API_KEY"
 
 
-# TODO: Should be a fixture
+@pytest.fixture
 def sample_conversation_config():
     conversation_config = {
         "word_count": 500,

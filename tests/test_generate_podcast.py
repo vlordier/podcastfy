@@ -5,6 +5,7 @@ import yaml
 from podcastfy.client import generate_podcast
 from podcastfy.utils.config import get_config_path
 from podcastfy.utils.config_conversation import load_conversation_config_model
+from podcastfy.utils.constants import MIN_AUDIO_FILE_BYTES
 
 
 TEST_URL = "https://en.wikipedia.org/wiki/Friends"
@@ -87,7 +88,7 @@ def test_generate_podcast_from_urls_11labs(default_conversation_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
@@ -104,7 +105,7 @@ def test_generate_podcast_from_urls_openai(default_conversation_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
@@ -121,7 +122,7 @@ def test_generate_podcast_from_urls_gemini(default_conversation_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
@@ -134,7 +135,7 @@ def test_generate_podcast_from_urls_edge(default_conversation_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
@@ -175,7 +176,7 @@ def test_generate_podcast_from_transcript_file(sample_conversation_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
     assert os.path.dirname(audio_file) == sample_conversation_config.get(
         "text_to_speech", {}
     ).get("output_directories", {}).get("audio")
@@ -195,7 +196,7 @@ def test_generate_podcast_with_custom_config(sample_config, sample_conversation_
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
     assert (
         os.path.dirname(audio_file)
         == sample_conversation_config["text_to_speech"]["output_directories"]["audio"]
@@ -211,7 +212,7 @@ def test_generate_from_local_pdf(sample_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 @pytest.mark.skip(reason="Testing edge only on Github Action as it's free")
 def test_generate_from_local_pdf_multispeaker(sample_config):
@@ -223,7 +224,7 @@ def test_generate_from_local_pdf_multispeaker(sample_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 @pytest.mark.skip(reason="Testing edge only on Github Action as it's free")
 def test_generate_from_local_pdf_multispeaker_longform(sample_config):
@@ -235,7 +236,7 @@ def test_generate_from_local_pdf_multispeaker_longform(sample_config):
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 def test_generate_podcast_no_urls_or_transcript():
     """Test that an error is raised when no URLs or transcript file is provided."""
@@ -254,7 +255,7 @@ def test_generate_podcast_from_images(sample_config, default_conversation_config
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
     # Check if a transcript was generated
     transcript_dir = default_conversation_config.output_directories.transcripts
@@ -275,7 +276,7 @@ def test_generate_podcast_from_raw_text(sample_config, default_conversation_conf
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 
@@ -347,7 +348,7 @@ def test_generate_podcast_with_custom_llm(sample_config, default_conversation_co
     assert audio_file is not None
     assert os.path.exists(audio_file)
     assert audio_file.endswith(".mp3")
-    assert os.path.getsize(audio_file) > 1024
+    assert os.path.getsize(audio_file) > MIN_AUDIO_FILE_BYTES
     assert os.path.dirname(audio_file) == default_conversation_config.output_directories.audio
 
 

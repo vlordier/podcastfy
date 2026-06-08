@@ -7,7 +7,7 @@ for the Podcastfy application. It uses a YAML file for conversation-specific con
 
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 import yaml
 
 from pydantic import BaseModel, Field, field_validator
@@ -102,59 +102,36 @@ class ConversationConfigModel(BaseModel):
         return v
 
 
-def load_conversation_config_model(config_conversation: Optional[Dict[str, Any]] = None) -> ConversationConfigModel:
-	"""
-	Load and return a ConversationConfigModel instance (Pydantic-validated).
-
-	Args:
-		config_conversation (Optional[Dict[str, Any]]): Configuration dictionary to use.
-			If None, default config will be loaded from conversation_config.yaml.
-
-	Returns:
-		ConversationConfigModel: An instance of the Pydantic model.
-	"""
-	if config_conversation is None:
+def load_conversation_config_model(config_data: Optional[Union[str, Dict[str, Any]]] = None) -> ConversationConfigModel:
+	if config_data is None:
 		config_path = get_conversation_config_path()
 		if config_path:
 			with open(config_path, 'r') as file:
-				raw = yaml.safe_load(file)
+				raw = yaml.safe_load(file) or {}
 		else:
 			raw = {}
+	elif isinstance(config_data, str):
+		with open(config_data, 'r') as file:
+			raw = yaml.safe_load(file) or {}
 	else:
-		raw = config_conversation
+		raw = config_data
 
 	# Parse TTS provider configs
 	tts_raw = raw.get("text_to_speech", {})
 	tts_providers = {}
 	for provider_name, provider_cfg in tts_raw.items():
 		if isinstance(provider_cfg, dict):
-			# Skip non-provider keys
 			if provider_name in ("output_directories", "audio_format", "temp_audio_dir", "ending_message", "default_tts_model"):
 				continue
 			tts_providers[provider_name] = TTSProviderConfig(**provider_cfg)
 
 	output_dirs_raw = tts_raw.get("output_directories", {}) if isinstance(tts_raw, dict) else {}
-	# Also support flat structure (from model_dump round-trip)
 	if not output_dirs_raw and isinstance(raw, dict) and "output_directories" in raw:
 		output_dirs_raw = raw["output_directories"]
 
+	kwargs = {k: v for k, v in raw.items() if k != "text_to_speech"}
 	return ConversationConfigModel(
-		conversation_style=raw.get("conversation_style", ["engaging", "fast-paced", "enthusiastic"]),
-		roles_person1=raw.get("roles_person1", "main summarizer"),
-		roles_person2=raw.get("roles_person2", "questioner/clarifier"),
-		dialogue_structure=raw.get("dialogue_structure", ["Introduction", "Main Content Summary", "Conclusion"]),
-		podcast_name=raw.get("podcast_name", "PODCASTIFY"),
-		podcast_tagline=raw.get("podcast_tagline", "Your Personal Generative AI Podcast"),
-		output_language=raw.get("output_language", "English"),
-		engagement_techniques=raw.get("engagement_techniques", ["rhetorical questions", "anecdotes", "analogies", "humor"]),
-		creativity=float(raw.get("creativity", DEFAULT_CREATIVITY)),
-		user_instructions=raw.get("user_instructions", ""),
-		max_num_chunks=raw.get("max_num_chunks", DEFAULT_MAX_NUM_CHUNKS),
-		min_chunk_size=raw.get("min_chunk_size", DEFAULT_MIN_CHUNK_SIZE),
+		**kwargs,
 		text_to_speech=tts_providers,
-		default_tts_model=tts_raw.get("default_tts_model", raw.get("default_tts_model", TTSProvider.OPENAI)),
-		audio_format=tts_raw.get("audio_format", raw.get("audio_format", AudioFormat.MP3)),
-		temp_audio_dir=tts_raw.get("temp_audio_dir", raw.get("temp_audio_dir", "data/audio/tmp/")),
-		ending_message=tts_raw.get("ending_message", raw.get("ending_message", "See You Next Time!")),
 		output_directories=OutputDirectories(**output_dirs_raw) if output_dirs_raw else OutputDirectories(),
 	)

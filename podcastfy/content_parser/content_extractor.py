@@ -90,38 +90,3 @@ class ContentExtractor:
 		except Exception as e:
 			logger.error(f"Error generating content for topic '{topic}': {str(e)}")
 			raise
-		
-
-def main(seed: int = 42) -> None:
-	"""
-	Main function to test the ContentExtractor class.
-	"""
-	logging.basicConfig(level=logging.INFO)
-
-	# Create an instance of ContentExtractor
-	extractor = ContentExtractor()
-
-	# Test sources
-	test_sources: List[str] = [
-		"www.souzatharsis.com",
-		"https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-		"path/to/sample.pdf"
-	]
-
-	for source in test_sources:
-		try:
-			logger.info(f"Extracting content from: {source}")
-			content = extractor.extract_content(source)
-
-			# Print the first 500 characters of the extracted content
-			logger.info(f"Extracted content (first {PREVIEW_CHARS} characters):\n{content[:PREVIEW_CHARS]}...")
-
-			# Print the total length of the extracted content
-			logger.info(f"Total length of extracted content: {len(content)} characters")
-			logger.info("-" * 50)
-
-		except Exception as e:
-			logger.error(f"An error occurred while processing {source}: {str(e)}")
-
-if __name__ == "__main__":
-	main()

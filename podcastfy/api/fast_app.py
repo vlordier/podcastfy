@@ -42,7 +42,6 @@ class GenerateRequest(BaseModel):
     google_key: Optional[str] = None
     elevenlabs_key: Optional[str] = None
     is_long_form: bool = False
-    user_config: Optional[dict] = None
     conversation_config: Optional[dict] = None
 
 
@@ -62,15 +61,17 @@ app = FastAPI()
 TEMP_DIR = os.path.join(os.path.dirname(__file__), TEMP_DIR_NAME)
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# Clean audio files older than 1 hour
-now = time.time()
-for f in os.listdir(TEMP_DIR):
-    fp = os.path.join(TEMP_DIR, f)
-    if os.path.isfile(fp) and now - os.path.getmtime(fp) > TEMP_FILE_MAX_AGE_SECONDS:
-        try:
-            os.remove(fp)
-        except OSError:
-            pass
+
+@app.on_event("startup")
+def cleanup_temp_files():
+    now = time.time()
+    for f in os.listdir(TEMP_DIR):
+        fp = os.path.join(TEMP_DIR, f)
+        if os.path.isfile(fp) and now - os.path.getmtime(fp) > TEMP_FILE_MAX_AGE_SECONDS:
+            try:
+                os.remove(fp)
+            except OSError:
+                pass
 
 @app.post("/generate")
 def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_api_key)):
@@ -112,7 +113,7 @@ def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_
             urls=data.urls,
             conversation_config=conversation_config,
             tts_model=tts_model,
-            longform=False,
+            longform=data.is_long_form,
         )
         # Handle the result
         if isinstance(result, str) and os.path.isfile(result):

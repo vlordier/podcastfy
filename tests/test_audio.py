@@ -1,6 +1,7 @@
 import unittest
 import os
 from podcastfy.text_to_speech import TextToSpeech
+from podcastfy.utils.constants import MIN_AUDIO_FILE_BYTES
 
 
 class TestAudio(unittest.TestCase):
@@ -16,7 +17,7 @@ class TestAudio(unittest.TestCase):
         tts.convert_to_speech(self.test_text, output_file)
 
         self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), 1024)
+        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
 
         # Clean up
         os.remove(output_file)
@@ -28,7 +29,7 @@ class TestAudio(unittest.TestCase):
         tts.convert_to_speech(self.test_text, output_file)
 
         self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), 1024)
+        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
 
         # Clean up
         os.remove(output_file)
@@ -39,7 +40,7 @@ class TestAudio(unittest.TestCase):
         tts.convert_to_speech(self.test_text, output_file)
 
         self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), 1024)
+        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
 
         # Clean up
         os.remove(output_file)
@@ -51,7 +52,7 @@ class TestAudio(unittest.TestCase):
         tts.convert_to_speech(self.test_text, output_file)
 
         self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), 1024)
+        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
 
         # Clean up
         os.remove(output_file)
@@ -63,7 +64,7 @@ class TestAudio(unittest.TestCase):
         tts.convert_to_speech(self.test_text, output_file)
 
         self.assertTrue(os.path.exists(output_file))
-        self.assertGreater(os.path.getsize(output_file), 1024)
+        self.assertGreater(os.path.getsize(output_file), MIN_AUDIO_FILE_BYTES)
 
         # Clean up
         os.remove(output_file)

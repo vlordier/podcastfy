@@ -9,10 +9,9 @@ import requests
 import re
 import html
 import logging
-import yaml
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from podcastfy.utils.config import get_config_path
+from podcastfy.utils.config import load_app_config_model
 from podcastfy.content_parser.pdf_extractor import PDFExtractor
 from podcastfy.content_parser.youtube_transcriber import YouTubeTranscriber
 from .extractor_base import ContentExtractor as ContentExtractorABC
@@ -42,16 +41,12 @@ class WebsiteExtractor(ContentExtractorABC):
 		"""
 		Initialize the WebsiteExtractor.
 		"""
-		config_path = get_config_path()
-		raw_config = {}
-		if config_path:
-			with open(config_path, 'r') as f:
-				raw_config = yaml.safe_load(f)
-		self.website_extractor_config = raw_config.get('website_extractor', {})
-		self.unwanted_tags = self.website_extractor_config.get('unwanted_tags', [])
-		self.user_agent = self.website_extractor_config.get('user_agent', 'Mozilla/5.0')
-		self.timeout = self.website_extractor_config.get('timeout', DEFAULT_TIMEOUT_SECONDS)
-		self.remove_patterns = self.website_extractor_config.get('markdown_cleaning', {}).get('remove_patterns', [])
+		app_config = load_app_config_model()
+		cfg = app_config.website_extractor
+		self.unwanted_tags = cfg.unwanted_tags
+		self.user_agent = cfg.user_agent
+		self.timeout = cfg.timeout
+		self.remove_patterns = cfg.markdown_cleaning.get("remove_patterns", [])
 
 	def extract_content(self, url: str) -> str:
 		"""
@@ -197,36 +192,3 @@ class WebsiteExtractor(ContentExtractorABC):
 			cleaned_content = re.sub(pattern, '', cleaned_content)
 
 		return cleaned_content.strip()
-
-def main(seed: int = 42) -> None:
-	"""
-	Main function to test the WebsiteExtractor class.
-	"""
-	logging.basicConfig(level=logging.INFO)
-
-	# Create an instance of WebsiteExtractor
-	extractor = WebsiteExtractor()
-
-	# Test URLs
-	test_urls: List[str] = [
-		"www.souzatharsis.com",
-		"https://en.wikipedia.org/wiki/Web_scraping"
-	]
-
-	for url in test_urls:
-		try:
-			logger.info(f"Extracting content from: {url}")
-			content = extractor.extract_content(url)
-
-			# Print the first 500 characters of the extracted content
-			logger.info(f"Extracted content (first 500 characters):\n{content[:500]}...")
-
-			# Print the total length of the extracted content
-			logger.info(f"Total length of extracted content: {len(content)} characters")
-			logger.info("-" * 50)
-
-		except Exception as e:
-			logger.error(f"An error occurred while processing {url}: {str(e)}")
-
-if __name__ == "__main__":
-	main()

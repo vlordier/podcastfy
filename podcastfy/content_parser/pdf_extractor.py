@@ -47,32 +47,3 @@ class PDFExtractor(ContentExtractorABC):
 		except Exception as e:
 			logger.error(f"Error extracting PDF content: {str(e)}")
 			raise
-
-def main(seed: int = 42) -> None:
-	"""
-	Test the PDFExtractor class with a specific PDF file.
-
-	Args:
-		seed (int): Random seed for reproducibility. Defaults to 42.
-	"""
-	# Set the random seed
-	import random
-	random.seed(seed)
-
-	# Get the absolute path of the script
-	script_dir = os.path.dirname(os.path.abspath(__file__))
-	
-	# Construct the path to the PDF file
-	pdf_path = os.path.join(script_dir, '..', '..', 'tests', 'data', 'file.pdf')
-	
-	extractor = PDFExtractor()
-
-	try:
-		content = extractor.extract_content(pdf_path)
-		print("PDF content extracted successfully:")
-		print(content[:500] + "..." if len(content) > 500 else content)
-	except Exception as e:
-		print(f"An error occurred: {str(e)}")
-
-if __name__ == "__main__":
-	main()

@@ -6,6 +6,7 @@ from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from ..base import LLMProvider
+from podcastfy.utils.enums import ApiKeyLabel
 
 
 class LiteLLM(LLMProvider):
@@ -14,7 +15,7 @@ class LiteLLM(LLMProvider):
         self.llm = ChatLiteLLM(
             model=model,
             temperature=kwargs.get("temperature", 1.0),
-            api_key=api_key or os.environ.get(kwargs.get("api_key_label", "OPENAI_API_KEY"), ""),
+            api_key=api_key or os.environ.get(kwargs.get("api_key_label", ApiKeyLabel.OPENAI.value), ""),
         )
 
     def generate(

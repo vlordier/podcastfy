@@ -3,6 +3,8 @@
 import edge_tts
 import os
 import tempfile
+import nest_asyncio
+import asyncio
 from typing import List
 from ..base import TTSProvider
 from podcastfy.utils.constants import COMMON_SSML_TAGS
@@ -11,17 +13,16 @@ class EdgeTTS(TTSProvider):
     def __init__(self, api_key: str = None, model: str = None) -> None:
         """
         Initialize Edge TTS provider.
-        
+
         Args:
             api_key (str): Not used for Edge TTS
             model (str): Model name to use
         """
         self.model = model or "default"  # Edge TTS doesn't use models, but we set it for consistency
+        self._api_key = api_key  # unused, kept for interface compatibility
 
     def generate_audio(self, text: str, voice: str, model: str, voice2: str = None) -> bytes:
         """Generate audio using Edge TTS."""
-        import nest_asyncio
-        import asyncio
         
         # Apply nest_asyncio to allow nested event loops
         nest_asyncio.apply()

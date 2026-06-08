@@ -6,10 +6,9 @@ It ensures consistent logging format and configuration across the application.
 """
 
 import logging
-import yaml
 
 def setup_logger(name: str) -> logging.Logger:
-    from podcastfy.utils.config import get_config_path
+    from podcastfy.utils.config import load_app_config_model
     """
     Set up and configure a logger.
 
@@ -19,17 +18,13 @@ def setup_logger(name: str) -> logging.Logger:
     Returns:
         logging.Logger: A configured logger instance.
     """
-    config_path = get_config_path()
-    raw_config = {}
-    if config_path:
-        with open(config_path, 'r') as f:
-            raw_config = yaml.safe_load(f)
-    logging_config = raw_config.get('logging', {})
+    app_config = load_app_config_model()
+    logging_config = app_config.logging
 
     logger = logging.getLogger(name)
-    logger.setLevel(logging_config.get('level', 'INFO'))
+    logger.setLevel(logging_config.level)
     
-    formatter = logging.Formatter(logging_config.get('format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    formatter = logging.Formatter(logging_config.format)
     
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)

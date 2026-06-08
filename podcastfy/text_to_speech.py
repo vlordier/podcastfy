@@ -9,14 +9,14 @@ including cleaning of input text and merging of audio files.
 import io
 import logging
 import os
-import re
 import tempfile
 from typing import List, Tuple, Optional, Dict, Any
 from pydub import AudioSegment
 
 from .tts.factory import TTSProviderFactory
-from .utils.config_conversation import load_conversation_config_model, TTSProviderConfig
+from .utils.config_conversation import load_conversation_config_model, TTSProviderConfig, ConversationConfigModel
 from .tts.base import QAPair
+from .utils.enums import TTSProvider, ApiKeyLabel
 from podcastfy.utils.constants import (
     GEMINI_MULTI_TTS_MODEL,
     GEMINI_MULTI_VOICE1,
@@ -33,24 +33,24 @@ class TextToSpeech:
         self,
         model: str = None,
         api_key: Optional[str] = None,
-        conversation_config: Optional[Dict[str, Any]] = None,
+        conversation_config: Optional[ConversationConfigModel] = None,
     ):
-        """
-        Initialize the TextToSpeech class.
-
-        Args:
-                        model (str): The model to use for text-to-speech conversion.
-                                                Options are 'elevenlabs', 'gemini', 'openai', 'edge' or 'geminimulti'. Defaults to 'openai'.
-                        api_key (Optional[str]): API key for the selected text-to-speech service.
-                        conversation_config (Optional[Dict]): Configuration for conversation settings.
-        """
-        self.conversation_config = load_conversation_config_model(conversation_config)
+        if isinstance(conversation_config, ConversationConfigModel):
+            self.conversation_config = conversation_config
+        else:
+            self.conversation_config = load_conversation_config_model(conversation_config)
         self.tts_config = self.conversation_config.text_to_speech
 
         # Get API key from config if not provided
         if not api_key:
-            api_key_label = f"{model.upper().replace('MULTI', '')}_API_KEY"
-            api_key = os.environ.get(api_key_label, None)
+            _api_key_map = {
+                TTSProvider.OPENAI: ApiKeyLabel.OPENAI,
+                TTSProvider.ELEVENLABS: ApiKeyLabel.ELEVENLABS,
+                TTSProvider.GEMINI: ApiKeyLabel.GEMINI,
+                TTSProvider.GEMINI_MULTI: ApiKeyLabel.GEMINI,
+            }
+            api_key_label = _api_key_map.get(TTSProvider(model.lower()))
+            api_key = os.environ.get(api_key_label.value, None) if api_key_label else None
 
         # Initialize provider using factory
         self.provider = TTSProviderFactory.create(
@@ -62,7 +62,7 @@ class TextToSpeech:
         self.audio_format = self.conversation_config.audio_format
         self.ending_message = self.conversation_config.ending_message
 
-    def _get_provider_config(self) -> Dict[str, Any]:
+    def _get_provider_config(self) -> TTSProviderConfig:
         """Get provider-specific configuration."""
         provider_name = self.provider.__class__.__name__.lower().replace("tts", "")
         provider_config = self.tts_config.get(provider_name)
@@ -76,10 +76,7 @@ class TextToSpeech:
                 },
             )
 
-        return {
-            "model": provider_config.model,
-            "default_voices": provider_config.default_voices,
-        }
+        return provider_config
 
     def convert_to_speech(self, text: str, output_file: str) -> None:
         """
@@ -145,8 +142,9 @@ class TextToSpeech:
                 temp_file = os.path.join(
                     temp_dir, f"{idx}_{speaker_type}.{self.audio_format}"
                 )
-                voice = provider_config.get("default_voices", {}).get(speaker_type)
-                model = provider_config.get("model")
+                voices = provider_config.default_voices or {}
+                voice = voices.get(speaker_type)
+                model = provider_config.model
 
                 audio_data = self.provider.generate_audio(content, voice, model)
                 with open(temp_file, "wb") as f:
@@ -218,106 +216,4 @@ class TextToSpeech:
         ]:
             if dir_path and not os.path.exists(dir_path):
                 os.makedirs(dir_path)
-
-    def _validate_transcript_format(self, text: str) -> None:
-        """
-        Validate that the input text follows the correct transcript format.
-
-        Args:
-            text (str): Input text to validate
-
-        Raises:
-            ValueError: If the text is not properly formatted
-
-        The text should:
-        1. Have alternating Person1 and Person2 tags
-        2. Each opening tag should have a closing tag
-        3. Tags should be properly nested
-        """
-        try:
-            # Check for empty text
-            if not text.strip():
-                raise ValueError("Input text is empty")
-
-            # Check for matching opening and closing tags
-            person1_open = text.count("<Person1>")
-            person1_close = text.count("</Person1>")
-            person2_open = text.count("<Person2>")
-            person2_close = text.count("</Person2>")
-
-            if person1_open != person1_close:
-                raise ValueError(
-                    f"Mismatched Person1 tags: {person1_open} opening tags and {person1_close} closing tags"
-                )
-            if person2_open != person2_close:
-                raise ValueError(
-                    f"Mismatched Person2 tags: {person2_open} opening tags and {person2_close} closing tags"
-                )
-
-            # Check for alternating pattern using regex
-            pattern = r"<Person1>.*?</Person1>\s*<Person2>.*?</Person2>"
-            matches = re.findall(pattern, text, re.DOTALL)
-
-            # Calculate expected number of pairs
-            expected_pairs = min(person1_open, person2_open)
-
-            if len(matches) != expected_pairs:
-                raise ValueError(
-                    "Tags are not properly alternating between Person1 and Person2. "
-                    "Each Person1 section should be followed by a Person2 section."
-                )
-
-            logger.debug("Transcript format validation passed")
-
-        except ValueError as e:
-            logger.error(f"Transcript format validation failed: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during transcript validation: {str(e)}")
-            raise ValueError(f"Invalid transcript format: {str(e)}") from e
-
-
-def main(seed: int = 42) -> None:
-    """
-    Main function to test the TextToSpeech class.
-
-    Args:
-            seed (int): Random seed for reproducibility. Defaults to 42.
-    """
-    try:
-        # Override default TTS model to use edge for tests
-        test_config = {"text_to_speech": {"default_tts_model": "edge"}}
-
-        # Read input text from file
-        with open(
-            "tests/data/transcript_336aa9f955cd4019bc1287379a5a2820.txt", "r"
-        ) as file:
-            input_text = file.read()
-
-        # Test ElevenLabs
-        tts_elevenlabs = TextToSpeech(model="elevenlabs")
-        elevenlabs_output_file = "tests/data/response_elevenlabs.mp3"
-        tts_elevenlabs.convert_to_speech(input_text, elevenlabs_output_file)
-        logger.info(
-            f"ElevenLabs TTS completed. Output saved to {elevenlabs_output_file}"
-        )
-
-        # Test OpenAI
-        tts_openai = TextToSpeech(model="openai")
-        openai_output_file = "tests/data/response_openai.mp3"
-        tts_openai.convert_to_speech(input_text, openai_output_file)
-        logger.info(f"OpenAI TTS completed. Output saved to {openai_output_file}")
-
-        # Test Edge
-        tts_edge = TextToSpeech(model="edge")
-        edge_output_file = "tests/data/response_edge.mp3"
-        tts_edge.convert_to_speech(input_text, edge_output_file)
-        logger.info(f"Edge TTS completed. Output saved to {edge_output_file}")
-
-    except Exception as e:
-        logger.error(f"An error occurred during text-to-speech conversion: {str(e)}")
-        raise
-
-
-if __name__ == "__main__":
-    main(seed=42)
+    

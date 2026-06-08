@@ -7,6 +7,7 @@ import pytest
 import re
 from typer.testing import CliRunner
 from podcastfy.client import app
+from podcastfy.utils.constants import MIN_AUDIO_FILE_BYTES
 
 runner = CliRunner()
 
@@ -97,7 +98,7 @@ def test_generate_podcast_from_urls(sample_config):
     audio_path = result.stdout.split(": ")[-1].strip()
     assert os.path.exists(audio_path)
     assert audio_path.endswith(".mp3")
-    assert os.path.getsize(audio_path) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_path) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 
 def test_generate_podcast_from_file(mock_files, sample_config):
@@ -109,7 +110,7 @@ def test_generate_podcast_from_file(mock_files, sample_config):
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
     assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > 1024
+        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
     )  # Check if larger than 1KB
 
 
@@ -122,7 +123,7 @@ def test_generate_podcast_from_transcript(mock_files, sample_config):
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
     assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > 1024
+        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
     )  # Check if larger than 1KB
 
 
@@ -171,7 +172,7 @@ def test_generate_podcast_from_urls_and_file(mock_files, sample_config):
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
     assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > 1024
+        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
     )  # Check if larger than 1KB
 
 
@@ -182,7 +183,7 @@ def test_generate_podcast_from_image(sample_config):
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
     assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > 1024
+        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
     )  # Check if larger than 1KB
 
 
@@ -204,7 +205,7 @@ def test_generate_podcast_with_custom_config(mock_files, sample_config):
     audio_path = result.stdout.split(": ")[-1].strip()
     assert os.path.exists(audio_path)
     assert audio_path.endswith(".mp3")
-    assert os.path.getsize(audio_path) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_path) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
     # Check for elements from the custom config in the transcript
     transcript_path = audio_path.replace(".mp3", ".txt")
@@ -225,7 +226,7 @@ def test_generate_podcast_from_urls_and_images(sample_config):
     assert os.path.exists(result.stdout.split(": ")[-1].strip())
     assert result.stdout.split(": ")[-1].strip().endswith(".mp3")
     assert (
-        os.path.getsize(result.stdout.split(": ")[-1].strip()) > 1024
+        os.path.getsize(result.stdout.split(": ")[-1].strip()) > MIN_AUDIO_FILE_BYTES
     )  # Check if larger than 1KB
 
 
@@ -257,7 +258,7 @@ def test_generate_podcast_from_raw_text():
     audio_path = result.stdout.split(": ")[-1].strip()
     assert os.path.exists(audio_path)
     assert audio_path.endswith(".mp3")
-    assert os.path.getsize(audio_path) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_path) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
 
 def test_cli_help():
@@ -295,7 +296,7 @@ def test_generate_podcast_with_custom_llm():
     audio_path = result.stdout.split(": ")[-1].strip()
     assert os.path.exists(audio_path)
     assert audio_path.endswith(".mp3")
-    assert os.path.getsize(audio_path) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_path) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
     # Clean up
     os.remove(audio_path)
@@ -358,7 +359,7 @@ def test_generate_podcast_from_topic():
     audio_path = result.stdout.split(": ")[-1].strip()
     assert os.path.exists(audio_path)
     assert audio_path.endswith(".mp3")
-    assert os.path.getsize(audio_path) > 1024  # Check if larger than 1KB
+    assert os.path.getsize(audio_path) > MIN_AUDIO_FILE_BYTES  # Check if larger than 1KB
 
     # Clean up
     os.remove(audio_path)

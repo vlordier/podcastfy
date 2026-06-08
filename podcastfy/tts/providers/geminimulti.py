@@ -5,6 +5,8 @@ from typing import List, ClassVar
 from ..base import TTSProvider
 import re
 import logging
+import os
+import tempfile
 from io import BytesIO
 from pydub import AudioSegment
 from podcastfy.utils.constants import (
@@ -16,6 +18,7 @@ from podcastfy.utils.constants import (
     GEMINI_MULTI_LANGUAGE,
     DEFAULT_BITRATE,
     DEFAULT_CODEC,
+    COMMON_SSML_TAGS,
 )
 
 logger = logging.getLogger(__name__)
@@ -170,8 +173,8 @@ class GeminiMultiTTS(TTSProvider):
                         continue
                     
                     # Save chunk to temporary file for ffmpeg to process
-                    temp_file = f"temp_chunk_{i}.mp3"
-                    with open(temp_file, "wb") as f:
+                    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+                        temp_file = f.name
                         f.write(chunk)
                     
                     # Create audio segment from temp file
@@ -186,7 +189,6 @@ class GeminiMultiTTS(TTSProvider):
                         logger.error(f"Error processing chunk {i}: {str(e)}")
                     
                     # Clean up temp file
-                    import os
                     try:
                         os.remove(temp_file)
                     except Exception as e:
@@ -237,7 +239,7 @@ class GeminiMultiTTS(TTSProvider):
         try:
             # Split text into chunks if needed
             text_chunks = self.chunk_text(text)
-            logger.info(f"#########################33 Text split into {len(text_chunks)} chunks")
+            logger.debug(f"Text split into {len(text_chunks)} chunks")
             audio_chunks = []
 
             # Process each chunk
@@ -255,7 +257,7 @@ class GeminiMultiTTS(TTSProvider):
                     # Split question into smaller chunks if needed
                     question_chunks = self.split_turn_text(question.strip())
                     logger.debug(f"Question split into {len(question_chunks)} chunks")
-                    logger.debug(f"######################### Question chunks: {question_chunks}")
+                    logger.debug(f"Question chunks: {question_chunks}")
                     for q_chunk in question_chunks:
                         logger.debug(f"Adding question turn: '{q_chunk[:50]}...' (length: {len(q_chunk)})")
                         q_turn = texttospeech_v1.MultiSpeakerMarkup.Turn()
@@ -267,7 +269,7 @@ class GeminiMultiTTS(TTSProvider):
                     if answer:
                         answer_chunks = self.split_turn_text(answer.strip())
                         logger.debug(f"Answer split into {len(answer_chunks)} chunks")
-                        logger.debug(f"######################### Answer chunks: {answer_chunks}")
+                        logger.debug(f"Answer chunks: {answer_chunks}")
                         for a_chunk in answer_chunks:
                             logger.debug(f"Adding answer turn: '{a_chunk[:50]}...' (length: {len(a_chunk)})")
                             a_turn = texttospeech_v1.MultiSpeakerMarkup.Turn()
@@ -311,8 +313,6 @@ class GeminiMultiTTS(TTSProvider):
     
     def get_supported_tags(self) -> List[str]:
         """Get supported SSML tags."""
-        # Add any Google-specific SSML tags to the common ones
-        from podcastfy.utils.constants import COMMON_SSML_TAGS
         return list(COMMON_SSML_TAGS)
         
     def validate_parameters(self, text: str, voice: str, model: str) -> None:

@@ -4,7 +4,7 @@ from google.cloud import texttospeech_v1
 from typing import List
 from ..base import TTSProvider
 import logging
-from podcastfy.utils.constants import GEMINI_TTS_VOICE
+from podcastfy.utils.constants import GEMINI_TTS_VOICE, COMMON_SSML_TAGS
 
 logger = logging.getLogger(__name__)
 
@@ -81,25 +81,18 @@ class GeminiTTS(TTSProvider):
     
     def get_supported_tags(self) -> List[str]:
         """Get supported SSML tags."""
-        from podcastfy.utils.constants import COMMON_SSML_TAGS
         return list(COMMON_SSML_TAGS)
-        
+
     def validate_parameters(self, text: str, voice: str, model: str) -> None:
         """
         Validate input parameters before generating audio.
-        
+
         Args:
             text (str): Input text
             voice (str): Voice ID/name
             model (str): Model name
-            
+
         Raises:
             ValueError: If parameters are invalid
         """
         super().validate_parameters(text, voice, model)
-        
-        if not text:
-            raise ValueError("Text cannot be empty")
-        
-        if not voice:
-            raise ValueError("Voice must be specified")

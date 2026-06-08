@@ -14,8 +14,8 @@ import re
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain import hub
-from podcastfy.utils.config_conversation import load_conversation_config_model
-from podcastfy.utils.config import load_app_config_model
+from podcastfy.utils.config_conversation import load_conversation_config_model, ConversationConfigModel
+from podcastfy.utils.config import load_app_config_model, ContentGeneratorConfigModel
 from podcastfy.llm.factory import LLMProviderFactory, detect_llm_provider
 import logging
 from langchain.prompts import HumanMessagePromptTemplate
@@ -45,7 +45,6 @@ class PromptParams(BaseModel):
     output_language: str = "English"
     user_instructions: str = ""
     engagement_techniques: list[str] = Field(default_factory=list)
-    is_long_form: bool = False
     model_config = ConfigDict(extra="forbid")
 
 
@@ -105,7 +104,7 @@ class LongFormContentGenerator:
         7. Generate a long conversation - output max_output_tokens tokens
     """
     
-    def __init__(self, chain: Any, llm: Any, config_conversation: Dict[str, Any], ):
+    def __init__(self, chain: Any, llm: Any, config_conversation: ConversationConfigModel):
         """
         Initialize ConversationGenerator.
         
@@ -115,8 +114,8 @@ class LongFormContentGenerator:
         """
         self.llm_chain = chain
         self.llm = llm
-        self.max_num_chunks = config_conversation.get("max_num_chunks", DEFAULT_MAX_NUM_CHUNKS)
-        self.min_chunk_size = config_conversation.get("min_chunk_size", DEFAULT_MIN_CHUNK_SIZE)
+        self.max_num_chunks = config_conversation.max_num_chunks
+        self.min_chunk_size = config_conversation.min_chunk_size
 
     def __calculate_chunk_size(self, input_content: str) -> int:
         """
@@ -331,16 +330,8 @@ class ContentCleanerMixin:
 
 
 class ContentGenerationStrategy(ABC):
-    """
-    Abstract base class defining the interface for content generation strategies.
-    
-    Defines the contract that all concrete strategies must implement, including
-    validation, generation, and cleaning operations.
-    """
-    
     @abstractmethod
     def validate(self, input_texts: str, image_file_paths: List[str]) -> None:
-        """Validate inputs for this strategy."""
         pass
         
     @abstractmethod
@@ -349,48 +340,31 @@ class ContentGenerationStrategy(ABC):
                 input_texts: str,
                 prompt_params: Dict[str, Any],
                 **kwargs) -> str:
-        """Generate content using this strategy."""
         pass
         
     @abstractmethod
     def clean(self, 
              response: str,
-             config: Dict[str, Any]) -> str:
-        """Clean the generated response according to strategy."""
+             config: ContentGeneratorConfigModel) -> str:
         pass
 
     @abstractmethod
     def compose_prompt_params(self,
-                            config_conversation: Dict[str, Any],
+                            config_conversation: ConversationConfigModel,
                             image_file_paths: Optional[List[str]] = None,
                             image_path_keys: Optional[List[str]] = None,
                             input_texts: str = "") -> Dict[str, Any]:
-        """Compose prompt parameters according to strategy."""
         pass
 
 
 class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
-    """
-    Strategy for generating standard-length content.
     
-    Implements basic content generation without chunking or special handling.
-    Uses common cleaning operations from ContentCleanerMixin.
-    """
-    
-    def __init__(self, llm, content_generator_config: Dict[str, Any], config_conversation: Dict[str, Any]):
-        """
-        Initialize StandardContentStrategy.
-        
-        Args:
-            content_generator_config (Dict[str, Any]): Configuration for content generation
-            config_conversation (Dict[str, Any]): Conversation configuration
-        """
+    def __init__(self, llm, content_generator_config: ContentGeneratorConfigModel, config_conversation: ConversationConfigModel):
         self.llm = llm
         self.content_generator_config = content_generator_config
         self.config_conversation = config_conversation
     
     def validate(self, input_texts: str, image_file_paths: List[str]) -> None:
-        """No specific validation needed for standard content."""
         pass
         
     def generate(self, 
@@ -398,66 +372,45 @@ class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
                 input_texts: str,
                 prompt_params: Dict[str, Any],
                 **kwargs) -> str:
-        """Generate standard-length content."""
         return chain.invoke(prompt_params)
         
     def clean(self, 
              response: str,
-             config: Dict[str, Any]) -> str:
-        """Apply basic TSS markup cleaning."""
+             config: ContentGeneratorConfigModel) -> str:
         return self._clean_tss_markup(response)
 
     def compose_prompt_params(self,
-                            config_conversation: Dict[str, Any],
+                            config_conversation: ConversationConfigModel,
                             image_file_paths: Optional[List[str]] = None,
                             image_path_keys: Optional[List[str]] = None,
                             input_texts: str = "") -> PromptParams:
-        """Compose prompt parameters for standard content generation."""
         if image_file_paths is None:
             image_file_paths = []
         if image_path_keys is None:
             image_path_keys = []
         prompt_params = PromptParams(
             input_text=input_texts,
-            conversation_style=config_conversation.get("conversation_style", []),
-            roles_person1=config_conversation.get("roles_person1", ""),
-            roles_person2=config_conversation.get("roles_person2", ""),
-            dialogue_structure=config_conversation.get("dialogue_structure", []),
-            podcast_name=config_conversation.get("podcast_name", ""),
-            podcast_tagline=config_conversation.get("podcast_tagline", ""),
-            output_language=config_conversation.get("output_language", "English"),
-            engagement_techniques=config_conversation.get("engagement_techniques", []),
+            conversation_style=config_conversation.conversation_style,
+            roles_person1=config_conversation.roles_person1,
+            roles_person2=config_conversation.roles_person2,
+            dialogue_structure=config_conversation.dialogue_structure,
+            podcast_name=config_conversation.podcast_name,
+            podcast_tagline=config_conversation.podcast_tagline,
+            output_language=config_conversation.output_language,
+            engagement_techniques=config_conversation.engagement_techniques,
         )
 
         return prompt_params
 
 
 class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
-    """
-    Strategy for generating long-form content.
     
-    Implements advanced content generation using chunking and context maintenance.
-    Includes additional cleaning operations specific to long-form content.
-    
-    Note:
-        - Only works with text input (no images)
-        - Requires non-empty input text
-    """
-    
-    def __init__(self, llm, content_generator_config: Dict[str, Any], config_conversation: Dict[str, Any]):
-        """
-        Initialize LongFormContentStrategy.
-        
-        Args:
-            content_generator_config (Dict[str, Any]): Configuration for content generation
-            config_conversation (Dict[str, Any]): Conversation configuration
-        """
+    def __init__(self, llm, content_generator_config: ContentGeneratorConfigModel, config_conversation: ConversationConfigModel):
         self.llm = llm
         self.content_generator_config = content_generator_config
         self.config_conversation = config_conversation
     
     def validate(self, input_texts: str, image_file_paths: List[str]) -> None:
-        """Validate inputs for long-form generation."""
         if not input_texts.strip():
             raise ValueError("Long-form generation requires non-empty input text")
         if image_file_paths:
@@ -468,7 +421,6 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
                 input_texts: str,
                 prompt_params: Dict[str, Any],
                 **kwargs) -> str:
-        """Generate long-form content."""
         generator = LongFormContentGenerator(chain, self.llm, self.config_conversation)
         return generator.generate_long_form(
             input_texts,
@@ -477,30 +429,11 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
         
     def clean(self, 
              response: str,
-             config: Dict[str, Any]) -> str:
-        """Apply enhanced cleaning for long-form content."""
-        # First apply standard cleaning using common method
+             config: ContentGeneratorConfigModel) -> str:
         standard_clean = self._clean_tss_markup(response)
-        # Then apply additional long-form specific cleaning
         return self._clean_transcript_response(standard_clean, config)
     
-    def _clean_transcript_response(self, transcript: str, config: Dict[str, Any]) -> str:
-        """
-        Clean transcript using a two-step process with LLM-based cleaning.
-        
-        First cleans the markup using a specialized prompt template, then rewrites
-        for better flow and consistency using a second prompt template.
-        
-        Args:
-            transcript (str): Raw transcript text that may contain scratchpad blocks
-            config (Dict[str, Any]): Configuration dictionary containing LLM and prompt settings
-            
-        Returns:
-            str: Cleaned and rewritten transcript with proper tags and improved flow
-            
-        Note:
-            Falls back to original or partially cleaned transcript if any cleaning step fails
-        """
+    def _clean_transcript_response(self, transcript: str, config: ContentGeneratorConfigModel) -> str:
         logger.debug("Starting transcript cleaning process")
 
         final_transcript = self._fix_alternating_tags(transcript)
@@ -510,36 +443,10 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
         return final_transcript
 
     def _fix_alternating_tags(self, transcript: str) -> str:
-        """
-        Ensures transcript has properly alternating Person1 and Person2 tags.
-        
-        Merges consecutive same-person tags and ensures proper tag alternation
-        throughout the transcript.
-        
-        Args:
-            transcript (str): Input transcript text that may have consecutive same-person tags
-            
-        Returns:
-            str: Transcript with properly alternating tags and merged content
-            
-        Example:
-            Input:
-                <Person1>Hello</Person1>
-                <Person1>World</Person1>
-                <Person2>Hi</Person2>
-            Output:
-                <Person1>Hello World</Person1>
-                <Person2>Hi</Person2>
-                
-        Note:
-            Returns original transcript if cleaning fails
-        """
         try:
-            # Split into individual tag blocks while preserving tags
             pattern = r'(<Person[12]>.*?</Person[12]>)'
             blocks = re.split(pattern, transcript, flags=re.DOTALL)
             
-            # Filter out empty/whitespace blocks
             blocks = [b.strip() for b in blocks if b.strip()]
             
             merged_blocks = []
@@ -547,7 +454,6 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
             current_person = None
             
             for block in blocks:
-                # Extract person number and content
                 match = re.match(r'<Person([12])>(.*?)</Person\1>', block, re.DOTALL)
                 if not match:
                     continue
@@ -556,18 +462,14 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
                 content = content.strip()
                 
                 if current_person == person_num:
-                    # Same person - append content
                     current_content.append(content)
                 else:
-                    # Different person - flush current content if any
                     if current_content:
                         merged_text = " ".join(current_content)
                         merged_blocks.append(f"<Person{current_person}>{merged_text}</Person{current_person}>")
-                    # Start new person
                     current_person = person_num
                     current_content = [content]
             
-            # Flush final content
             if current_content:
                 merged_text = " ".join(current_content)
                 merged_blocks.append(f"<Person{current_person}>{merged_text}</Person{current_person}>")
@@ -576,27 +478,26 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
             
         except Exception as e:
             logger.error(f"Error fixing alternating tags: {str(e)}")
-            return transcript  # Return original if fixing fails
+            return transcript
 
     def compose_prompt_params(self,
-                            config_conversation: Dict[str, Any],
+                            config_conversation: ConversationConfigModel,
                             image_file_paths: Optional[List[str]] = None,
                             image_path_keys: Optional[List[str]] = None,
                             input_texts: str = "") -> PromptParams:
-        """Compose prompt parameters for long-form content generation."""
         if image_file_paths is None:
             image_file_paths = []
         if image_path_keys is None:
             image_path_keys = []
         return PromptParams(
-            conversation_style=config_conversation.get("conversation_style", []),
-            roles_person1=config_conversation.get("roles_person1", ""),
-            roles_person2=config_conversation.get("roles_person2", ""),
-            dialogue_structure=config_conversation.get("dialogue_structure", []),
-            podcast_name=config_conversation.get("podcast_name", ""),
-            podcast_tagline=config_conversation.get("podcast_tagline", ""),
-            output_language=config_conversation.get("output_language", "English"),
-            engagement_techniques=config_conversation.get("engagement_techniques", []),
+            conversation_style=config_conversation.conversation_style,
+            roles_person1=config_conversation.roles_person1,
+            roles_person2=config_conversation.roles_person2,
+            dialogue_structure=config_conversation.dialogue_structure,
+            podcast_name=config_conversation.podcast_name,
+            podcast_tagline=config_conversation.podcast_tagline,
+            output_language=config_conversation.output_language,
+            engagement_techniques=config_conversation.engagement_techniques,
         )
 
 
@@ -606,20 +507,15 @@ class ContentGenerator:
         is_local: bool=False, 
         model_name: str=DEFAULT_GEMINI_LLM, 
         api_key_label: str=ApiKeyLabel.GEMINI,
-        conversation_config: Optional[Dict[str, Any]] = None
+        conversation_config: Optional[ConversationConfigModel] = None
     ):
-        """
-        Initialize the ContentGenerator.
-
-        Args:
-                api_key (str): API key for Google's Generative AI.
-                conversation_config (Optional[Dict[str, Any]]): Custom conversation configuration.
-        """
-        #os.environ["GOOGLE_API_KEY"] = api_key
         self.app_config = load_app_config_model()
         self.content_generator_config = self.app_config.content_generator
 
-        self.config_conversation = load_conversation_config_model(conversation_config)
+        if isinstance(conversation_config, ConversationConfigModel):
+            self.config_conversation = conversation_config
+        else:
+            self.config_conversation = load_conversation_config_model(conversation_config)
 
         # Create output directories if they don't exist
         transcripts_dir = self.config_conversation.output_directories.transcripts
@@ -689,7 +585,7 @@ class ContentGenerator:
         for i in range(num_images):
             key = f"image_path_{i}"
             image_content = {
-                "image_url": {"url": f"{{{key}}}", "detail": "high"},
+                "image_url": {"url": f"{{{key}}}", "detail": "high"},  # TODO: make detail level configurable
                 "type": "image_url",
             }
             image_path_keys.append(key)
