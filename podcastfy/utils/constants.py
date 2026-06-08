@@ -3,7 +3,6 @@ from .enums import TTSProvider
 # --- TTS chunking ---
 DEFAULT_CHUNK_BYTES: int = 1300
 DEFAULT_TURN_CHARS: int = 500
-MAX_TEXT_BYTES_BEFORE_CHUNKING: int = 5000
 
 # --- Audio encoding ---
 DEFAULT_BITRATE: str = "320k"
@@ -51,4 +50,3 @@ COMMON_SSML_TAGS: list[str] = ["lang", "p", "phoneme", "s", "sub"]
 # --- Other ---
 PREVIEW_CHARS: int = 500
 MIN_AUDIO_FILE_BYTES: int = 1024
-MIN_LONGFORM_CHARS: int = 1000

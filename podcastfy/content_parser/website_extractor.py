@@ -84,7 +84,7 @@ class WebsiteExtractor(ContentExtractorABC):
 			raise Exception(f"Failed to extract content from {url}: {str(e)}")
 		except Exception as e:
 			logger.error(f"An unexpected error occurred while extracting content from {url}: {str(e)}")
-			raise Exception(f"An unexpected error occurred while extracting content from {url}: {str(e)}")
+			raise
 
 	def fetch_with_playwright(self, url: str) -> str:
 		"""

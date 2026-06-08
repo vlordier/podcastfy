@@ -51,16 +51,11 @@ def _load_yaml_config() -> dict:
 
 class ContentGeneratorConfigModel(BaseModel):
     llm_model: str = DEFAULT_GEMINI_LLM
-    meta_llm_model: str = DEFAULT_GEMINI_LLM
     max_output_tokens: int = Field(default=DEFAULT_MAX_OUTPUT_TOKENS, ge=MIN_OUTPUT_TOKENS, le=MAX_OUTPUT_TOKENS)
     prompt_template: str = "souzatharsis/podcastfy_multimodal_cleanmarkup"
     prompt_commit: str = "b2365f11"
     longform_prompt_template: str = "souzatharsis/podcastfy_longform"
     longform_prompt_commit: str = "acfdbc91"
-    cleaner_prompt_template: str = "souzatharsis/podcastfy_longform_clean"
-    cleaner_prompt_commit: str = "8c110a0b"
-    rewriter_prompt_template: str = "souzatharsis/podcast_rewriter"
-    rewriter_prompt_commit: str = "8ee296fb"
 
 
 class ContentExtractorConfigModel(BaseModel):

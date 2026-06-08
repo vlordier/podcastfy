@@ -13,7 +13,7 @@ from podcastfy.content_parser.content_extractor import ContentExtractor
 from podcastfy.content_generator import ContentGenerator
 from podcastfy.text_to_speech import TextToSpeech
 from podcastfy.utils.config import load_app_config_model, AppConfigModel
-from podcastfy.utils.config_conversation import load_conversation_config_model, ConversationConfigModel
+from podcastfy.utils.config_conversation import load_conversation_config_model, ConversationConfigModel, OutputDirectories
 from podcastfy.utils.logger import setup_logger
 from podcastfy.utils.enums import TTSProvider, ApiKeyLabel
 from podcastfy.utils.constants import DEFAULT_TRANSCRIPTS_DIR, DEFAULT_AUDIO_DIR
@@ -25,6 +25,8 @@ logger = setup_logger(__name__)
 
 app = typer.Typer()
 
+# Module-level side effect: ensures LangSmith tracing is disabled by default for CLI users.
+# This is intentional — it must be set before any LangChain imports are resolved.
 os.environ.setdefault("LANGCHAIN_TRACING_V2", "False")
 
 
@@ -70,8 +72,7 @@ def process_content(
                 if known_fields:
                     od = known_fields.get("output_directories")
                     if od is not None and isinstance(od, dict):
-                        from podcastfy.utils.config_conversation import OutputDirectories as OD
-                        known_fields["output_directories"] = OD(**od)
+                        known_fields["output_directories"] = OutputDirectories(**od)
                     conv_config = conv_config.model_copy(update=known_fields)
         # Get output directories from conversation config
         tts_config = conv_config.text_to_speech

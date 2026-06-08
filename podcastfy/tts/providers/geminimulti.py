@@ -186,16 +186,16 @@ class GeminiMultiTTS(TTSProvider):
                         else:
                             logger.warning(f"Zero-length segment in chunk {i}")
                     except Exception as e:
-                        logger.error(f"Error processing chunk {i}: {str(e)}")
+                        logger.exception(f"Error processing chunk {i}: {str(e)}")
                     
                     # Clean up temp file
                     try:
                         os.remove(temp_file)
                     except Exception as e:
-                        logger.warning(f"Failed to remove temp file {temp_file}: {str(e)}")
+                        logger.exception(f"Failed to remove temp file {temp_file}: {str(e)}")
                     
                 except Exception as e:
-                    logger.error(f"Error handling chunk {i}: {str(e)}")
+                    logger.exception(f"Error handling chunk {i}: {str(e)}")
                     continue
             
             if not valid_chunks:

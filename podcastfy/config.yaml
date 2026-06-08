@@ -1,15 +1,10 @@
 content_generator:
   llm_model: "gemini-2.5-flash"
-  meta_llm_model: "gemini-2.5-flash"
   max_output_tokens: 8192
   prompt_template: "souzatharsis/podcastfy_multimodal_cleanmarkup"
   prompt_commit: "b2365f11"
   longform_prompt_template: "souzatharsis/podcastfy_longform"
   longform_prompt_commit: "acfdbc91" #"ff865019"
-  cleaner_prompt_template: "souzatharsis/podcastfy_longform_clean"
-  cleaner_prompt_commit: "8c110a0b"
-  rewriter_prompt_template: "souzatharsis/podcast_rewriter"
-  rewriter_prompt_commit: "8ee296fb"
 
 website_extractor:
   jina_api_url: "https://r.jina.ai"

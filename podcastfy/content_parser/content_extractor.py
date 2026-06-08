@@ -17,6 +17,9 @@ from google.genai import types
 from podcastfy.utils.constants import DEFAULT_GEMINI_LLM, PREVIEW_CHARS
 
 # Register extractors (order matters — more specific first)
+# These module-level calls are intentional: the factory pattern requires
+# all extractor subclasses to be registered at import time so that
+# ExtractorFactory.create() can dispatch to the correct handler.
 ExtractorFactory.register(PDFExtractor)
 ExtractorFactory.register(YouTubeTranscriber)
 ExtractorFactory.register(WebsiteExtractor)

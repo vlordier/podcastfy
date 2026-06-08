@@ -1,7 +1,7 @@
 """Abstract base class for Text-to-Speech providers."""
 
 from abc import ABC, abstractmethod
-from typing import List, ClassVar, Tuple, NamedTuple
+from typing import List, ClassVar, Tuple, NamedTuple, Optional
 import re
 
 from podcastfy.utils.enums import SpeakerTag
@@ -92,17 +92,19 @@ class TTSProvider(ABC):
         ]
         return processed_matches
 
-    def clean_tss_markup(self, input_text: str, additional_tags: List[SpeakerTag] = [SpeakerTag.PERSON1, SpeakerTag.PERSON2], supported_tags: List[str] = None) -> str:
+    def clean_tss_markup(self, input_text: str, additional_tags: Optional[List[SpeakerTag]] = None, supported_tags: Optional[List[str]] = None) -> str:
         """
         Remove unsupported TSS markup tags from the input text while preserving supported SSML tags.
 
         Args:
             input_text (str): The input text containing TSS markup tags.
-            additional_tags (List[str]): Optional list of additional tags to preserve. Defaults to ["Person1", "Person2"].
-            supported_tags (List[str]): Optional list of supported tags. If None, use COMMON_SSML_TAGS.
+            additional_tags (Optional[List[SpeakerTag]]): Optional list of additional tags to preserve. Defaults to [SpeakerTag.PERSON1, SpeakerTag.PERSON2].
+            supported_tags (Optional[List[str]]): Optional list of supported tags. If None, use COMMON_SSML_TAGS.
         Returns:
             str: Cleaned text with unsupported TSS markup tags removed.
         """
+        if additional_tags is None:
+            additional_tags = [SpeakerTag.PERSON1, SpeakerTag.PERSON2]
         if supported_tags is None:
             supported_tags = list(COMMON_SSML_TAGS)
 

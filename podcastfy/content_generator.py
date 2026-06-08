@@ -7,12 +7,14 @@ provides methods to generate and save the generated content.
 """
 
 import os
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 import re
 
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import Runnable
+from langchain.llms.base import BaseLLM
 from langchain import hub
 from podcastfy.utils.config_conversation import load_conversation_config_model, ConversationConfigModel
 from podcastfy.utils.config import load_app_config_model, ContentGeneratorConfigModel
@@ -104,7 +106,7 @@ class LongFormContentGenerator:
         7. Generate a long conversation - output max_output_tokens tokens
     """
     
-    def __init__(self, chain: Any, llm: Any, config_conversation: ConversationConfigModel):
+    def __init__(self, chain: Runnable, llm: BaseLLM, config_conversation: ConversationConfigModel):
         """
         Initialize ConversationGenerator.
         
@@ -338,7 +340,7 @@ class ContentGenerationStrategy(ABC):
     def generate(self, 
                 chain,
                 input_texts: str,
-                prompt_params: Dict[str, Any],
+                prompt_params: PromptParams,
                 **kwargs) -> str:
         pass
         
@@ -353,7 +355,7 @@ class ContentGenerationStrategy(ABC):
                             config_conversation: ConversationConfigModel,
                             image_file_paths: Optional[List[str]] = None,
                             image_path_keys: Optional[List[str]] = None,
-                            input_texts: str = "") -> Dict[str, Any]:
+                            input_texts: str = "") -> PromptParams:
         pass
 
 
@@ -370,7 +372,7 @@ class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
     def generate(self, 
                 chain,
                 input_texts: str,
-                prompt_params: Dict[str, Any],
+                prompt_params: PromptParams,
                 **kwargs) -> str:
         return chain.invoke(prompt_params)
         
@@ -419,7 +421,7 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
     def generate(self, 
                 chain,
                 input_texts: str,
-                prompt_params: Dict[str, Any],
+                prompt_params: PromptParams,
                 **kwargs) -> str:
         generator = LongFormContentGenerator(chain, self.llm, self.config_conversation)
         return generator.generate_long_form(
@@ -578,14 +580,14 @@ class ContentGenerator:
         # Only add text content if input_text is not empty
         text_content = {
             "type": "text",
-            "text": "Please analyze this input and generate a conversation. {input_text}",  # TODO: candidate for external config
+            "text": "Please analyze this input and generate a conversation. {input_text}",
         }
         messages.append(text_content)
 
         for i in range(num_images):
             key = f"image_path_{i}"
             image_content = {
-                "image_url": {"url": f"{{{key}}}", "detail": "high"},  # TODO: make detail level configurable
+                "image_url": {"url": f"{{{key}}}", "detail": "high"},
                 "type": "image_url",
             }
             image_path_keys.append(key)
@@ -620,7 +622,7 @@ class ContentGenerator:
     def generate_qa_content(
         self,
         input_texts: str = "",
-        image_file_paths: List[str] = [],
+        image_file_paths: Optional[List[str]] = None,
         output_filepath: Optional[str] = None,
         longform: bool = False
     ) -> str:
@@ -648,10 +650,10 @@ class ContentGenerator:
             strategy = self.longform_strategy if longform else self.standard_strategy
             
             # Validate inputs for chosen strategy
-            strategy.validate(input_texts, image_file_paths)
+            strategy.validate(input_texts, image_file_paths or [])
 
             # Setup chain
-            num_images = 0 if self.is_local else len(image_file_paths)
+            num_images = 0 if self.is_local else len(image_file_paths or [])
             self.prompt_template, image_path_keys = self.__compose_prompt(num_images, longform)
             self.parser = StrOutputParser()
             self.chain = self.prompt_template | self.llm | self.parser
@@ -660,7 +662,7 @@ class ContentGenerator:
             # Prepare parameters using strategy
             prompt_params = strategy.compose_prompt_params(
                 self.config_conversation,
-                image_file_paths,
+                image_file_paths or [],
                 image_path_keys,
                 input_texts
             )

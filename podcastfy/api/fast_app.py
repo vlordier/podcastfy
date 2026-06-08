@@ -121,11 +121,6 @@ def generate_podcast_endpoint(data: GenerateRequest, auth: str = Depends(verify_
             output_path = os.path.join(TEMP_DIR, filename)
             shutil.copy2(result, output_path)
             return {"audioUrl": f"/audio/{filename}"}
-        elif hasattr(result, 'audio_path'):
-            filename = f"podcast_{os.urandom(8).hex()}.mp3"
-            output_path = os.path.join(TEMP_DIR, filename)
-            shutil.copy2(result.audio_path, output_path)
-            return {"audioUrl": f"/audio/{filename}"}
         else:
             raise HTTPException(status_code=500, detail="Invalid result format")
 
