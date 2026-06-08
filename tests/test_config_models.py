@@ -70,21 +70,21 @@ class TestPydanticConfigs(unittest.TestCase):
         assert cfg.text_to_speech["elevenlabs"].default_voices["question"] == "Chris"
 
     def test_creativity_range(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="creativity"):
             ConversationConfigModel(creativity=-1)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="creativity"):
             ConversationConfigModel(creativity=3)
 
     def test_max_num_chunks_range(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="max_num_chunks"):
             ConversationConfigModel(max_num_chunks=0)
 
     def test_conversation_style_empty_string(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="conversation_style"):
             ConversationConfigModel(conversation_style=["engaging", ""])
 
     def test_engagement_techniques_empty_string(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="engagement_techniques"):
             ConversationConfigModel(engagement_techniques=["humor", ""])
 
     def test_load_conversation_config_model_populates_all(self):

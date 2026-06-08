@@ -11,7 +11,7 @@ from podcastfy.llm.factory import LLMProviderFactory, detect_llm_provider
 class TestLLMProviderABC(unittest.TestCase):
     def test_abc_cannot_be_instantiated(self):
         with pytest.raises(TypeError):
-            LLMProvider()  # type: ignore
+            LLMProvider()  # type: ignore[abstract]
 
     def test_detect_gemini(self):
         assert detect_llm_provider("gemini-2.5-flash") == "gemini"
@@ -25,7 +25,7 @@ class TestLLMProviderABC(unittest.TestCase):
         assert detect_llm_provider("local") == "llamafile"
 
     def test_factory_unknown_provider(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Unknown LLM provider"):
             LLMProviderFactory.create("nonexistent", api_key="", model="x")
 
 

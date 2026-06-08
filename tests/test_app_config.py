@@ -17,9 +17,9 @@ class TestAppConfig(unittest.TestCase):
         assert cfg.max_output_tokens == 8192
 
     def test_max_output_tokens_range(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="max_output_tokens"):
             ContentGeneratorConfigModel(max_output_tokens=100)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="max_output_tokens"):
             ContentGeneratorConfigModel(max_output_tokens=100000)
 
     def test_app_config_defaults(self):

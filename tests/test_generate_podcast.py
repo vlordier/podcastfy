@@ -225,8 +225,7 @@ def test_generate_from_local_pdf_multispeaker_longform(sample_config):
 
 
 def test_generate_podcast_no_urls_or_transcript():
-    """Test that an error is raised when no URLs or transcript file is provided."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No input provided"):
         generate_podcast()
 
 

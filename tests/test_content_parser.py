@@ -33,12 +33,7 @@ class TestContentParser(unittest.TestCase):
         assert extracted_transcript[:100].strip() == expected_transcript[:100].strip()
 
     def test_website_extractor(self):
-        """
-        Test the WebsiteExtractor class to ensure it correctly extracts content from a website.
-        """
-        # pass #TODO remove pass when testing. Keeping it here to avoid running out of quota.
-
-        # Initialize WebsiteExtractor
+        # implement when API quota is available
         extractor = WebsiteExtractor()
 
         # Test URL
