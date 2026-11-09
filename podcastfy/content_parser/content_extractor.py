@@ -13,17 +13,16 @@ from google.genai import types
 
 from podcastfy.utils.constants import DEFAULT_GEMINI_LLM
 
+from .audio_transcriber import AudioTranscriber
 from .extractor_factory import ExtractorFactory
 from .pdf_extractor import PDFExtractor
 from .website_extractor import WebsiteExtractor
 from .youtube_transcriber import YouTubeTranscriber
 
 # Register extractors (order matters — more specific first)
-# These module-level calls are intentional: the factory pattern requires
-# all extractor subclasses to be registered at import time so that
-# ExtractorFactory.create() can dispatch to the correct handler.
 ExtractorFactory.register(PDFExtractor)
 ExtractorFactory.register(YouTubeTranscriber)
+ExtractorFactory.register(AudioTranscriber)
 ExtractorFactory.register(WebsiteExtractor)
 
 logger = logging.getLogger(__name__)

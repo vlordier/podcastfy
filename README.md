@@ -37,6 +37,67 @@ Podcastfy is an open-source Python package that transforms multi-modal content (
 
 Unlike closed-source UI-based tools focused primarily on research synthesis (e.g. NotebookLM ❤️), Podcastfy focuses on open source, programmatic and bespoke generation of engaging, conversational content from a multitude of multi-modal sources, enabling customization and scale.
 
+```mermaid
+graph TD
+    subgraph input["Input Sources"]
+        URL[Websites]
+        PDF[PDF Documents]
+        YT[YouTube Videos]
+        IMG[Images]
+        TOPIC[User Topics]
+    end
+
+    subgraph extract["Content Extraction"]
+        WEB[Website Extractor]
+        PDF_EXT[PDF Extractor]
+        YT_EXT[YouTube Transcriber]
+        IMG_EXT[Image Captioning]
+    end
+
+    subgraph llm["LLM Processing"]
+        SUMMARIZE[Content Summarization]
+        SCRIPT[Podcast Script Generation]
+    end
+
+    subgraph tts["Text-to-Speech"]
+        VOICE_Q[Question Voice]
+        VOICE_A[Answer Voice]
+        MIX[Mix & Edit]
+    end
+
+    input --> extract
+    URL --> WEB
+    PDF --> PDF_EXT
+    YT --> YT_EXT
+    IMG --> IMG_EXT
+    TOPIC --> SUMMARIZE
+
+    WEB --> SUMMARIZE
+    PDF_EXT --> SUMMARIZE
+    YT_EXT --> SUMMARIZE
+    IMG_EXT --> SUMMARIZE
+
+    SUMMARIZE --> SCRIPT
+    SCRIPT --> VOICE_Q
+    SCRIPT --> VOICE_A
+    VOICE_Q --> MIX
+    VOICE_A --> MIX
+
+    MIX --> output[Output MP3]
+
+    classDef input fill:#e3f2fd,stroke:#1976d2,color:#000
+    classDef extract fill:#fff3e0,stroke:#f57c00,color:#000
+    classDef llm fill:#e8f5e9,stroke:#388e3c,color:#000
+    classDef tts fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    classDef output fill:#e0f7fa,stroke:#00838f,color:#000
+
+    class URL,PDF,YT,IMG,TOPIC input
+    class WEB,PDF_EXT,YT_EXT,IMG_EXT extract
+    class SUMMARIZE,SCRIPT llm
+    class VOICE_Q,VOICE_A,MIX tts
+    class output output
+```
+
 ## Testimonials 💬
 
 > "Love that you casually built an open source version of the most popular product Google built in the last decade"

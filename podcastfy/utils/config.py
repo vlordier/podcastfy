@@ -83,6 +83,12 @@ class YouTubeTranscriberConfigModel(BaseModel):
     remove_phrases: list[str] = Field(default_factory=lambda: ["[music]"])
 
 
+class AudioTranscriberConfigModel(BaseModel):
+    model: str = "base"
+    batch_size: int = 12
+    language: str | None = None
+
+
 class LoggingConfigModel(BaseModel):
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -93,6 +99,7 @@ class AppConfigModel(BaseModel):
     content_extractor: ContentExtractorConfigModel = Field(default_factory=ContentExtractorConfigModel)
     website_extractor: WebsiteExtractorConfigModel = Field(default_factory=WebsiteExtractorConfigModel)
     youtube_transcriber: YouTubeTranscriberConfigModel = Field(default_factory=YouTubeTranscriberConfigModel)
+    audio_transcriber: AudioTranscriberConfigModel = Field(default_factory=AudioTranscriberConfigModel)
     logging: LoggingConfigModel = Field(default_factory=LoggingConfigModel)
     main: dict[str, Any] | None = None
 
@@ -103,12 +110,14 @@ def load_app_config_model() -> AppConfigModel:
     ce_raw = raw.get("content_extractor", {})
     we_raw = raw.get("website_extractor", {})
     yt_raw = raw.get("youtube_transcriber", {})
+    at_raw = raw.get("audio_transcriber", {})
     log_raw = raw.get("logging", {})
     return AppConfigModel(
         content_generator=ContentGeneratorConfigModel(**cg_raw),
         content_extractor=ContentExtractorConfigModel(**ce_raw),
         website_extractor=WebsiteExtractorConfigModel(**we_raw),
         youtube_transcriber=YouTubeTranscriberConfigModel(**yt_raw),
+        audio_transcriber=AudioTranscriberConfigModel(**at_raw),
         logging=LoggingConfigModel(**log_raw),
         main=raw.get("main"),
     )

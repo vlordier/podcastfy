@@ -69,6 +69,9 @@ class LLMBackend:
         if is_local:
             provider_name = LLMProvider.LLAMAFILE
             api_key = ""
+        elif "openrouter" in model_name.lower():
+            provider_name = LLMProvider.LITELLM
+            api_key = os.environ.get(ApiKeyLabel.OPENROUTER, "")
         else:
             provider_name = detect_llm_provider(model_name)
             api_key = os.environ.get(ApiKeyLabel.GEMINI if provider_name == LLMProvider.GEMINI else api_key_label, "")
@@ -355,7 +358,7 @@ class StandardContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
         pass
 
     def generate(self, chain, input_texts: str, prompt_params: PromptParams, **kwargs) -> str:
-        return chain.invoke(prompt_params)
+        return chain.invoke(prompt_params.model_dump())
 
     def clean(self, response: str, config: ContentGeneratorConfigModel) -> str:
         return self._clean_tss_markup(response)
@@ -403,7 +406,7 @@ class LongFormContentStrategy(ContentGenerationStrategy, ContentCleanerMixin):
 
     def generate(self, chain, input_texts: str, prompt_params: PromptParams, **kwargs) -> str:
         generator = LongFormContentGenerator(chain, self.llm, self.config_conversation)
-        return generator.generate_long_form(input_texts, prompt_params)
+        return generator.generate_long_form(input_texts, prompt_params.model_dump())
 
     def clean(self, response: str, config: ContentGeneratorConfigModel) -> str:
         standard_clean = self._clean_tss_markup(response)

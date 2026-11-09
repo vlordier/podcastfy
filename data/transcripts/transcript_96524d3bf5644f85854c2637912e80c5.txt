@@ -1,0 +1,35 @@
+(scratchpad)
+We are tasked with generating a TTS-optimized podcast conversation in French, following the interview journalistique format of France Inter, solemn and informative. The input is the Wikipedia article on the Massacre d'Oran (5 juillet 1962) and a summary from Herodote.net. We need to discuss the provided content, not a random topic. Roles: Person1 = journaliste (France Inter), Person2 = général Joseph Katz. The conversation should start with "Welcome to Rendez-vous avec l'Histoire – France Inter." and end with a goodbye message. We must include challenges (e.g., journalist questioning Katz's decisions). Use TTS markup for prosody, pauses (max 0.2s), pitch/rate variations. Avoid <emphasis> and <say-as>. Keep turns short, natural, with filler words. Emotional context: solemn, reflective. Cover key points: context of violence, accords d'Évian, the day of 5 July, the fusillade, massacre, French non-intervention, hypotheses of coup monté, bilan des victimes, non-reconnaissance, Macron 2022. Ensure accuracy from input. Output only conversation, no scratchpad. Use <Person1> and <Person2> tags. Incorporate overlapping speech and back-and-forth. Use advanced reasoning to structure logical flow. I will now write the conversation.
+<Person1> "Bonsoir à tous, et bienvenue dans Rendez-vous avec l'Histoire – France Inter. Aujourd'hui, nous plongeons dans l'un des épisodes les plus sombres, les plus longtemps tus, de la guerre d'Algérie : le massacre d'Oran, le 5 juillet 1962, jour de la proclamation de l'indépendance algérienne. Pour en parler, nous recevons celui qui commandait alors les 18 000 soldats français dans la ville, le général Joseph Katz. Général, merci d'être avec nous."</Person1>
+
+<Person2> "Merci à vous. C'est un souvenir douloureux, mais il est nécessaire de dire la vérité, après tant d'années de silence."</Person2>
+
+<Person1> "Général, commençons par le contexte. Les accords d'Évian sont signés en mars, le cessez-le-feu est en place. Mais à Oran, la violence ne cesse pas. Le FLN et l'OAS s'affrontent, les enlèvements se multiplient... Comment décririez-vous l'atmosphère dans les semaines qui précèdent le 5 juillet ?"</Person1>
+
+<Person2> "C'était une ville en état de guerre civile larvée. Dès avril, les enlèvements d'Européens sont quotidiens. Le FLN met en place des barrages, et l'armée française a reçu l'ordre de ne plus patrouiller dans les quartiers musulmans. <prosody rate="slow">La peur était partout.</prosody> Et puis, il y a ces messages rassurants diffusés par nos camions militaires, promettant la protection... Mais nous étions pieds et poings liés par les instructions venues de Paris."</Person2>
+
+<Person1> "Pieds et poings liés ? Justement, parlons de cette fameuse note du 21 juin, où le président de Gaulle rejette toute intervention ‘d'initiative française’. Vous avez reçu des consignes très restrictives, n'est-ce pas ?"</Person1>
+
+<Person2> "Exactement. Vingt notes ou messages contradictoires entre le 13 juin et le 1er juillet. La dernière instruction disait clairement : la France n'a plus la responsabilité du maintien de l'ordre. Nous ne pouvions intervenir qu'en cas de légitime défense ou d'attaque caractérisée contre nos nationaux. <break time="0.2s"/> Et encore, il fallait une demande expresse des autorités civiles algériennes."</Person2>
+
+<Person1> "Le 5 juillet au matin, une manifestation musulmane se dirige vers le centre-ville, place d'Armes. Puis, un coup de feu... D'où vient-il ? On ne le sait toujours pas, trente ans plus tard."</Person1>
+
+<Person2> "Non. À 11h15, un coup de feu, puis d'autres. La panique s'empare de la foule. Et très vite, des hommes armés – des ATO, des soldats de l'ALN, des civils – se mettent à tirer sur les Européens. C'est une chasse à l'homme. J'ai été prévenu vers midi par le capitaine Bakhti. J'ai immédiatement demandé aux gendarmes de se déployer, mais... <prosody pitch="low">les ordres étaient formels.</prosody>"</Person2>
+
+<Person1> "Permettez-moi de vous interrompre, mon général. De nombreux témoins, et des historiens comme Jean Monneret, disent que vous attendu jusqu'à 15h pour que les gendarmes mobiles sortent. Pourquoi ce délai ? N'auriez-vous pas pu ordonner une intervention plus rapide, même sans l'accord du préfet algérien ?"</Person1>
+
+<Person2> "Écoutez, je sais que l'on m'accuse d'avoir tardé. Mais je ne pouvais pas violer des ordres directs du gouvernement. J'ai survolé la ville en hélicoptère, j'ai vu l'horreur. J'ai téléphoné à Paris. On m'a répondu : ‘Surtout, ne bougez pas.’ <prosody volume="loud">Je n'avais pas le choix.</prosody> Si j'avais lancé mes troupes sans autorisation, j'aurais été désavoué, et la situation aurait pu empirer."</Person2>
+
+<Person1> "Certains historiens, comme Jean-François Paya, soutiennent la thèse d'un coup monté par l'ALN de l'extérieur, celle de Boumediene, pour discréditer le GPRA et forcer l'exode des Européens. Qu'en pensez-vous ?"</Person1>
+
+<Person2> "C'est une hypothèse crédible. Le capitaine Bakhti, lié aux ultras, ne m'avait pas prévenu de cette manifestation. Et l'ALN de l'extérieur est entrée dans Oran le 8 juillet en prétendant rétablir l'ordre... Mais je ne peux pas l'affirmer avec certitude. Ce qui est sûr, c'est que le massacre a servi leurs intérêts politiques."</Person2>
+
+<Person1> "Le bilan humain est terrible. Des centaines de morts et de disparus européens. Et pourtant, pendant soixante ans, la France a gardé le silence. Ce n'est qu'en janvier 2022 qu'Emmanuel Macron a reconnu le massacre. Général, quel regard portez-vous sur cette occultation ?"</Person1>
+
+<Person2> "C'est une blessure qui n'a jamais cicatrisé. J'ai moi-même été accusé à tort d'avoir refusé d'intervenir. Mais le vrai responsable, c'est le gouvernement de l'époque, qui a retiré le maintien de l'ordre au FLN sans prévoir de transition. Et puis, il y a eu cette volonté de ne pas ternir la proclamation de l'indépendance. <prosody rate="slow">Les morts d'Oran étaient gênants.</prosody>"</Person2>
+
+<Person1> "Un silence d'État, comme l'écrit l'historien Jean-Jacques Jordi. Général, pour terminer, que diriez-vous aux familles des victimes, qui attendent encore la vérité ?"</Person1>
+
+<Person2> "Je leur dirais que je partage leur peine, et que l'honneur d'un général n'est pas d'obéir aveuglément, mais de dire la vérité, même tardivement. Ce massacre est un crime de masse, et il doit être inscrit dans notre mémoire collective."</Person2>
+
+<Person1> "Merci, général Joseph Katz, pour ce témoignage nécessaire et poignant. Et merci à vous, auditeurs, d'avoir écouté Rendez-vous avec l'Histoire sur France Inter. N'oublions jamais les 5 juillet 1962 et ces centaines d'innocents fauchés. Au revoir."</Person1>

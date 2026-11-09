@@ -1,0 +1,37 @@
+conversation_style: 
+  - "interview journalistique"
+  - "format radio France Inter"
+  - "solennel"
+  - "informatif"
+roles_person1: "journaliste (voix France Inter)"
+roles_person2: "général Joseph Katz"
+dialogue_structure: 
+  - "Introduction par le journaliste"
+  - "Le contexte de l'indépendance algérienne et les accords d'Évian"
+  - "La journée du 5 juillet 1962 à Oran"
+  - "Le coup de feu place Karguentah et le déclenchement du massacre"
+  - "L'appel au général de Gaulle et l'ordre de ne pas intervenir"
+  - "Les heures d'horreur et le bilan"
+  - "Conclusion et réflexion historique"
+podcast_name: "Rendez-vous avec l'Histoire"
+podcast_tagline: "France Inter"
+output_language: "French"
+engagement_techniques: 
+  - "questions du journaliste"
+  - "témoignage direct du général"
+  - "faits historiques vérifiés"
+creativity: 1
+user_instructions: ""
+
+text_to_speech:
+  default_tts_model: "edge"
+  output_directories:
+    transcripts: "./data/transcripts"
+    audio: "./data/audio"
+  edge:
+    default_voices:
+      question: "fr-FR-DeniseNeural"
+      answer: "fr-FR-HenriNeural"
+  audio_format: "mp3"
+  temp_audio_dir: "data/audio/tmp/"
+  ending_message: "Merci de nous avoir écoutés. Rendez-vous la semaine prochaine pour un nouveau portrait historique."

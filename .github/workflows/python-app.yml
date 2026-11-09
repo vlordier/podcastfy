@@ -1,27 +1,26 @@
 name: Pytest
+
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - '**.py'                   # Python files
-      - 'tests/**'               # Test directory
-      - 'requirements.txt'        # Dependencies
-      - 'pyproject.toml'               # Package setup
-      - '.github/workflows/**'    # Workflow files
-      - 'pyproject.toml'         # Python project config
+      - "**.py"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/**"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - '**.py'
-      - 'tests/**'
-      - 'requirements.txt'
-      - 'pyproject.toml'
-      - '.github/workflows/**'
-      - 'pyproject.toml'
+      - "**.py"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/**"
+
 permissions:
   contents: read
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     container:
       image: ubuntu:24.04
@@ -32,11 +31,11 @@ jobs:
         set -e
         apt-get update
         DEBIAN_FRONTEND=noninteractive apt-get install -y python3-full python3-pip python3-venv ffmpeg
-    - name: Cache virtual environment
+    - name: Cache venv
       uses: actions/cache@v3
       with:
         path: /opt/venv
-        key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-venv-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-venv-
     - name: Set up Python virtual environment
@@ -51,20 +50,6 @@ jobs:
         . /opt/venv/bin/activate
         pip install flake8 pytest pytest-xdist
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Check versions and list packages
-      run: |
-        set -e
-        . /opt/venv/bin/activate
-        echo "Ubuntu version:"
-        cat /etc/os-release
-        echo "FFmpeg version:"
-        ffmpeg -version
-        echo "Python version:"
-        python3 --version
-        echo "Pip version:"
-        pip --version
-        echo "Installed packages:"
-        pip list
     - name: Lint with flake8
       run: |
         set -e
@@ -79,9 +64,3 @@ jobs:
         set -e
         . /opt/venv/bin/activate
         pytest -n auto --dist loadfile
-    - name: Upload test artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: path/to/test/artifacts
-      if: always()
